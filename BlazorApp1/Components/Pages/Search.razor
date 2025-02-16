@@ -1,7 +1,14 @@
 ﻿@using OpenAI.Chat
+@inject NavigationManager NavigationManager
 
 @page "/search"
 @rendermode InteractiveServer
+
+@* <head>
+    <meta charset="utf-8" />
+    <title>Spotify App</title>
+    <script src="~/bootstrap/spotify.js" type="module"></script>
+</head> *@
 
 <PageTitle>Search</PageTitle>
 
@@ -11,6 +18,9 @@
 
 <input @bind="PromptText" placeholder="Enter text here" style="width:400px" />
 <button @onclick="SubmitPrompt">Submit</button>
+
+@* <button onclick="testFunction()">JS link. CLICK ME!!!</button> *@
+<button @onclick="AuthorizeSpotify">JS link. CLICK ME!!!</button>
 
 <p>You entered: @ResponseText</p>
 @code {
@@ -36,4 +46,18 @@
 
     }
 
+    @code {
+        private void AuthorizeSpotify()
+        {
+            var clientId = "6c920f46f61c4d6f8274777f892531b7";
+            var redirectUri = "https://localhost:7262/search";
+            var scopes = "user-read-private user-read-email";
+
+            var url = $"https://accounts.spotify.com/authorize?client_id={clientId}&response_type=code&redirect_uri={Uri.EscapeDataString(redirectUri)}&scope={Uri.EscapeDataString(scopes)}";
+            // NavigateTo(url, true);
+            // Navigation.NavigateTo(url, true);
+            
+            NavigationManager.NavigateTo(url, true);
+        }
+    }
 }
