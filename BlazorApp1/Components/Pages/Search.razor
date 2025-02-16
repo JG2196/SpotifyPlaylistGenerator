@@ -1,0 +1,39 @@
+﻿@using OpenAI.Chat
+
+@page "/search"
+@rendermode InteractiveServer
+
+<PageTitle>Search</PageTitle>
+
+<h1>Search</h1>
+
+@* <input style="width:400px" placeholder="Search..." id="" /> *@
+
+<input @bind="PromptText" placeholder="Enter text here" style="width:400px" />
+<button @onclick="SubmitPrompt">Submit</button>
+
+<p>You entered: @ResponseText</p>
+@code {
+    // private string InputText { get; set; } = "";
+    // private string SubmittedText { get; set; } = "";
+
+    // private void SubmitText()
+    // {
+    //     SubmittedText = InputText;
+    //     Console.WriteLine("SubmittedText: " + SubmittedText);
+    // }
+
+    private string PromptText { get; set; } = "";
+    private string ResponseText { get; set; } = "";
+
+    private void SubmitPrompt()
+    {
+        ChatClient client = new(model: "gpt-4o-mini", apiKey: "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");
+
+        ChatCompletion completion = client.CompleteChat(PromptText);
+
+        ResponseText = completion.Content[0].Text;
+
+    }
+
+}
