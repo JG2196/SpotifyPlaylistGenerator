@@ -14,14 +14,15 @@
 
         if (!string.IsNullOrEmpty(code))
         {
-            await ExchangeCodeForToken(code);
+            ExchangeCodeForTokenT(code);
+            
         }
     }
 
-    private async Task ExchangeCodeForToken(string code)
+    private async Task ExchangeCodeForTokenT(string code)
     {
         var clientId = Config["Spotify:ClientId"];
-        //var clientSecret = Config["Spotify:ClientSecret"];
+        var clientSecret = Config["Spotify:ClientSecret"];
         var redirectUri = Config["Spotify:RedirectUri"];
 
         var requestBody = new FormUrlEncodedContent(new[]
@@ -30,12 +31,32 @@
             new KeyValuePair<string, string>("code", code),
             new KeyValuePair<string, string>("redirect_uri", redirectUri),
             new KeyValuePair<string, string>("client_id", clientId),
-            //new KeyValuePair<string, string>("client_secret", clientSecret)
+            new KeyValuePair<string, string>("client_secret", clientSecret)
         });
 
         var response = await Http.PostAsync("https://accounts.spotify.com/api/token", requestBody);
         var content = await response.Content.ReadAsStringAsync();
 
         Console.WriteLine(content);
+
+        // var tokenObj = System.Text.Json.JsonDocument.Parse(content).RootElement;
+        // return tokenObj.TryGetProperty("access_token", out var token) ? token.GetString() : null;
     }
+
+    // private async Task FetchUserProfile(string accessToken)
+    // {
+    //     Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+    //     var response = await Http.GetAsync("https://api.spotify.com/v1/me");
+    //     var content = await response.Content.ReadAsStringAsync();
+
+    //     var profile = System.Text.Json.JsonDocument.Parse(content).RootElement;
+
+    //     var displayName = profile.GetProperty("display_name").GetString();
+    //     var email = profile.GetProperty("email").GetString();
+    //     var spotifyId = profile.GetProperty("id").GetString();
+    //     var profileImageUrl = profile.GetProperty("images").EnumerateArray().FirstOrDefault().GetProperty("url").GetString();
+
+    //     Console.WriteLine($"Name: {displayName}, Email: {email}, ID: {spotifyId}, Image: {profileImageUrl}");
+    // }
+
 }
