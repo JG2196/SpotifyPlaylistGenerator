@@ -1,0 +1,24 @@
+﻿@inject NavigationManager NavigationManager
+@inject HttpClient Http;
+
+@rendermode InteractiveServer
+
+<h3>Logging out...</h3>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Redirect to Spotify logout page
+        var logoutUrl = "https://www.spotify.com/logout/";
+        var redirectUrl = "https://localhost:7262/search"; // Change to your Blazor app URL
+
+        // Navigate to Spotify logout, then return
+        NavigationManager.NavigateTo(logoutUrl, true);
+
+        // // Delay and return to app
+        // Task.Delay(3000).ContinueWith(_ =>
+        // {
+        //     NavigationManager.NavigateTo(redirectUrl, forceLoad: true);
+        // });
+    }
+}
