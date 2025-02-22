@@ -1,9 +1,11 @@
 ﻿@using SpotifyServices;
 @using BlazorApp1.Data;
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject NavigationManager NavigationManager
 @inject HttpClient Http
 @inject IConfiguration _Configuration
 @inject IJSRuntime JSRuntime
+@inject ProtectedSessionStorage ProtectedSessionStore
 
 
 @page "/auth/spotifycallback"
@@ -13,33 +15,63 @@
 
 @code {
 
-    protected override async Task OnInitializedAsync()
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration);
+
+    //     var uri = new Uri(NavigationManager.Uri);
+    //     var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+
+    //     if (query.TryGetValue("code", out var code))
+    //     {
+    //         await ExchangeCodeForToken(code);
+
+    //         // if (spotifyTokenResponse != null)
+    //         // {
+    //         //     //Store token in session storage
+    //         //     await JSRuntime.InvokeVoidAsync("sessionStorage.setItem", "spotify_token", spotifyTokenResponse.access_token);
+    //         //     Console.WriteLine(spotifyTokenResponse.access_token);
+    //         //     NavigationManager.NavigateTo("/search");
+    //         // }
+    //     }
+    //     else 
+    //     {
+    //         NavigationManager.NavigateTo("/");
+    //     }
+    //     //}
+    // }
+
+    private bool isInitialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration);
-
-        var uri = new Uri(NavigationManager.Uri);
-        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-
-        if (query.TryGetValue("code", out var code))
+        if (firstRender && !isInitialized)
         {
-            await ExchangeCodeForToken(code);
+            isInitialized = true;
 
-            // if (spotifyTokenResponse != null)
-            // {
-            //     //Store token in session storage
-            //     await JSRuntime.InvokeVoidAsync("sessionStorage.setItem", "spotify_token", spotifyTokenResponse.access_token);
-            //     Console.WriteLine(spotifyTokenResponse.access_token);
-            //     NavigationManager.NavigateTo("/search");
-            // }
+            // Simulate receiving the token from URL parameters (Modify this based on your OAuth implementation)
+            var url = new Uri(NavigationManager.Uri);
+            var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(url.Query);
+            string token = null;
+
+            if (query.TryGetValue("code", out var code))
+            {
+                token = await ExchangeCodeForToken(code);
+            }
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                Console.WriteLine($"Storing token: {token}");
+                //await JSRuntime.InvokeVoidAsync("sessionStorage.setItem", "spotify_token", token);
+                await ProtectedSessionStore.SetAsync("test", token);
+
+                // Redirect to home or dashboard after setting the token
+                NavigationManager.NavigateTo("/");
+            }
         }
-        else 
-        {
-            NavigationManager.NavigateTo("/");
-        }
-        //}
     }
 
-    public async Task ExchangeCodeForToken(string code)
+    public async Task<string> ExchangeCodeForToken(string code)
     {
 
         var requestContent = new FormUrlEncodedContent(new[]
@@ -53,20 +85,23 @@
 
         var response = await Http.PostAsync("https://accounts.spotify.com/api/token", requestContent);
         var responseContent = await response.Content.ReadFromJsonAsync<SpotifyTokenResponse>();
-
+        string token = null;
         if (responseContent != null)
         {
-            await Task.Delay(500);
-            await JSRuntime.InvokeVoidAsync("console.log", "Storing token:", responseContent.access_token);
-            await JSRuntime.InvokeVoidAsync("sessionStorage.setItem", "spotify_token", responseContent.access_token);
+            token = responseContent.access_token;
+
+            //await Task.Delay(500);
+            //await JSRuntime.InvokeVoidAsync("console.log", "Storing token:", responseContent.access_token);
+            //await JSRuntime.InvokeVoidAsync("sessionStorage.setItem", "spotify_token", responseContent.access_token);
             // Store the token securely (e.g., local storage or session)
             //*/*/*/*/*/*/Navigation.NavigateTo("/");*/*/*/*/*/*/
-            NavigationManager.NavigateTo("/search");
+            //NavigationManager.NavigateTo("/search");
         }
-        else
-        {
-            NavigationManager.NavigateTo("/");
-        }
+        return token;
+        // else
+        //{
+          //  NavigationManager.NavigateTo("/");
+        //}
     }
 
 }
