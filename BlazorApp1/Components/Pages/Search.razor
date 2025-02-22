@@ -2,10 +2,12 @@
 @using OpenAIServices;
 @using SpotifyServices;
 @using BlazorApp1.Data;
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject NavigationManager NavigationManager
 @inject HttpClient Http;
 @inject IConfiguration _Configuration
 @inject IJSRuntime JSRuntime
+@inject ProtectedSessionStorage ProtectedSessionStore
 
 @page "/search"
 @rendermode InteractiveServer
@@ -28,6 +30,9 @@
 @* <button onclick="testFunction()">JS link. CLICK ME!!!</button> *@
 <button @onclick="AuthorizeSpotify">Sign in</button>
 <button @onclick="GetProfile">Get Profile</button>
+<button @onclick="GetProfileTwo">Get Profile2</button>
+<button @onclick="StoreSession">Session</button>
+<button @onclick="RemoveToken">Remove token</button>
 <NavLink href="logout">Sign out</NavLink>
 
 <p>You entered: @ResponseText</p>
@@ -61,10 +66,14 @@
         ResponseText = completion.Content[0].Text;
 
     }
+    private async void StoreSession() 
+    {
+        await ProtectedSessionStore.SetAsync("test", "123");
+    }
 
     private void AuthorizeSpotify()
     {
-        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration);
+        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, ProtectedSessionStore);
 
         string spotifyAuthUrl = spotifyAppServices.SpotifySignInAuth();
 
@@ -86,19 +95,23 @@
 
     private async Task GetProfile()
     {
-        string token = await GetAccessToken();
+        //string token = await GetAccessToken();
 
-        Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        var user = await Http.GetFromJsonAsync<SpotifyUser>("https://api.spotify.com/v1/me");
+        // Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        // var user = await Http.GetFromJsonAsync<SpotifyUser>("https://api.spotify.com/v1/me");
 
-        Console.WriteLine($"Logged in as {user.DisplayName}");
-    
+        //Console.WriteLine($"Logged in as {user.DisplayName}");
 
-        // var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-        // var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
-        // string code = query["code"] ?? string.Empty;
 
-        // var token = await ExchangeCodeForToken(code);
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        string code = query["code"] ?? string.Empty;
+        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, ProtectedSessionStore);
+
+        await spotifyAppServices.ExchangeCodeForToken(code);
+        await spotifyAppServices.GetTokenAsync();
+        //string token = await GetAccessToken();
+        //Console.WriteLine("GetAccessToken: " + token);
         // // if (!string.IsNullOrEmpty(token))
         // // {
         // //     await FetchUserProfile(token);
@@ -120,9 +133,34 @@
         // Console.WriteLine($"Name: {displayName}, ID: {spotifyId}");
         //, Email: {email}, ID: {spotifyId}");
     }
+    private async Task GetProfileTwo()
+    {
+        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, ProtectedSessionStore);
+        string token = await spotifyAppServices.GetTokenAsync();
+        //string token = await GetAccessToken();
+        Console.WriteLine("GetAccessToken: " + token);
+
+        Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        var response = await Http.GetAsync("https://api.spotify.com/v1/me");
+        var content = await response.Content.ReadAsStringAsync();
+
+        var profile = System.Text.Json.JsonDocument.Parse(content).RootElement;
+
+        var displayName = profile.GetProperty("display_name").GetString();
+        //var email = profile.GetProperty("email").GetString();
+        var spotifyId = profile.GetProperty("id").GetString();
+        //var profileImageUrl = profile.GetProperty("images").EnumerateArray().FirstOrDefault().GetProperty("url").GetString();
+
+        Console.WriteLine($"Name: {displayName}, ID: {spotifyId}");
+        //, Email: {email}, ID: {spotifyId}");
+    }
     private async Task<string> GetAccessToken()
     {
         return await JSRuntime.InvokeAsync<string>("sessionStorage.getItem", "spotify_token");
+    }
+    private async Task RemoveToken()
+    {
+        await JSRuntime.InvokeVoidAsync("sessionStorage.removeItem", "spotify_token");
     }
     // private async Task<string?> ExchangeCodeForToken(string code)
     // {
