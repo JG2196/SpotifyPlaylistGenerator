@@ -35,12 +35,13 @@ namespace BlazorApp1.SpotifyServices
             string? spotifyAuthUrl = null;
 
             string spotifyAuthAddress = "https://accounts.spotify.com/authorize";
-            string nUrl = "https://localhost:7262/auth/spotifycallback";
+
+            string nUri = "https://localhost:7262/search";
             try
             {
                 string scopes = _Configuration["SpotifyWeb:Scopes"];
 
-                spotifyAuthUrl = $"{spotifyAuthAddress}?client_id={clientId}&response_type=code&redirect_uri={Uri.EscapeDataString(redirectUri)}&scopes={Uri.EscapeDataString(scopes)}";
+                spotifyAuthUrl = $"{spotifyAuthAddress}?client_id={clientId}&response_type=code&redirect_uri={Uri.EscapeDataString(nUri)}&scopes={Uri.EscapeDataString(scopes)}";
             }
             catch (Exception ex)
             {
@@ -61,7 +62,7 @@ namespace BlazorApp1.SpotifyServices
             new KeyValuePair<string, string>("redirect_uri", redirectUri),
             new KeyValuePair<string, string>("client_id", clientId),
             new KeyValuePair<string, string>("client_secret", clientSecret),
-        });
+            });
 
             var response = await httpClient.PostAsync("https://accounts.spotify.com/api/token", requestContent);
             var responseContent = await response.Content.ReadFromJsonAsync<SpotifyTokenResponse>();

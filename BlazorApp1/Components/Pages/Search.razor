@@ -28,12 +28,10 @@
 <button @onclick="SubmitPrompt">Submit</button>
 
 @* <button onclick="testFunction()">JS link. CLICK ME!!!</button> *@
-<button @onclick="AuthorizeSpotify">Sign in</button>
-<button @onclick="GetProfile">Get Profile</button>
-<button @onclick="GetProfileTwo">Get Profile2</button>
-<button @onclick="StoreSession">Session</button>
-<button @onclick="RemoveToken">Remove token</button>
-<NavLink href="logout">Sign out</NavLink>
+<button @onclick="AuthorizeSpotify">Spotify sign in</button>
+<button @onclick="GetAccessToken">Get access token</button>
+<button @onclick="GetProfile">Get profile</button>
+<button @onclick="AuthorizeSignOut">Spotify sign out</button>
 
 <p>You entered: @ResponseText</p>
 @code {
@@ -49,11 +47,6 @@
     private string PromptText { get; set; } = "";
     private string ResponseText { get; set; } = "";
 
-    private class SpotifyUser
-    {
-        public string DisplayName { get; set; }
-        public string Email { get; set; }
-    }
 
     private void SubmitPrompt()
     {
@@ -64,11 +57,6 @@
         ChatCompletion completion = chatClientService.CompleteChat(PromptText);
 
         ResponseText = completion.Content[0].Text;
-
-    }
-    private async void StoreSession() 
-    {
-        await ProtectedSessionStore.SetAsync("test", "123");
     }
 
     private void AuthorizeSpotify()
@@ -80,28 +68,15 @@
         NavigationManager.NavigateTo(spotifyAuthUrl, true);
     }
 
-    private void AuthorizeSignOut()
+    private async Task AuthorizeSignOut()
     {
-
-        // //string signoutUrl = "https://accounts.spotify.com/logout/";
-        // string signoutUrl = "https://www.spotify.com/logout/";
-        // string redirectUri = "https://localhost:7262/search";
-
-
-        // var url = "https://localhost:7262/Logout";
-
-        // NavigationManager.NavigateTo(url, true);
+        string signoutUrl = "https://accounts.spotify.com/logout/";
+        await JSRuntime.InvokeVoidAsync("open", signoutUrl, "_blank");
+        await RemoveToken();
     }
 
-    private async Task GetProfile()
+    private async Task GetAccessToken()
     {
-        //string token = await GetAccessToken();
-
-        // Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        // var user = await Http.GetFromJsonAsync<SpotifyUser>("https://api.spotify.com/v1/me");
-
-        //Console.WriteLine($"Logged in as {user.DisplayName}");
-
 
         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
         var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
@@ -110,30 +85,9 @@
 
         await spotifyAppServices.ExchangeCodeForToken(code);
         await spotifyAppServices.GetTokenAsync();
-        //string token = await GetAccessToken();
-        //Console.WriteLine("GetAccessToken: " + token);
-        // // if (!string.IsNullOrEmpty(token))
-        // // {
-        // //     await FetchUserProfile(token);
-        // // }
-
-        // Console.WriteLine("accessToken: " + token);
-        // //string accessToken = "AQDmEb32lhqgscjGEmEBrPg52-OI-jojZ8uEFlhBN7_lg7fvuSDgqdB3aIxOpPSSVqcoWAcN3bFi1tBmDYjNHEONIz8VZE59wXZEo_d67O8LRJ-t_-vnZv84mm9FYLEZ-vNacQeZ1-YMFJAbvUZrHepE_iYcc8HAAcEUP4b5Wr1ROJo5daq_crYVxBsu8nyi8gpAPn6CKhLxfPw1ADPxYVsFihQ4";
-        // Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        // var response = await Http.GetAsync("https://api.spotify.com/v1/me");
-        // var content = await response.Content.ReadAsStringAsync();
-
-        // var profile = System.Text.Json.JsonDocument.Parse(content).RootElement;
-
-        // var displayName = profile.GetProperty("display_name").GetString();
-        // //var email = profile.GetProperty("email").GetString();
-        // var spotifyId = profile.GetProperty("id").GetString();
-        // //var profileImageUrl = profile.GetProperty("images").EnumerateArray().FirstOrDefault().GetProperty("url").GetString();
-
-        // Console.WriteLine($"Name: {displayName}, ID: {spotifyId}");
-        //, Email: {email}, ID: {spotifyId}");
     }
-    private async Task GetProfileTwo()
+
+    private async Task GetProfile()
     {
         SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, ProtectedSessionStore);
         string token = await spotifyAppServices.GetTokenAsync();
@@ -154,36 +108,15 @@
         Console.WriteLine($"Name: {displayName}, ID: {spotifyId}");
         //, Email: {email}, ID: {spotifyId}");
     }
-    private async Task<string> GetAccessToken()
+
+    private async Task<string> GetToken()
     {
         return await JSRuntime.InvokeAsync<string>("sessionStorage.getItem", "spotify_token");
     }
+
     private async Task RemoveToken()
     {
         await JSRuntime.InvokeVoidAsync("sessionStorage.removeItem", "spotify_token");
     }
-    // private async Task<string?> ExchangeCodeForToken(string code)
-    // {
-    //     var clientId = "6c920f46f61c4d6f8274777f892531b7";
-    //     var clientSecret = "ee31b038d78f480fbee19414e0bb1575";
-    //     var redirectUri = "https://localhost:7262/search";
 
-    //     var requestBody = new FormUrlEncodedContent(new[]
-    //     {
-    //     new KeyValuePair<string, string>("grant_type", "authorization_code"),
-    //     new KeyValuePair<string, string>("code", code),
-    //     new KeyValuePair<string, string>("redirect_uri", redirectUri),
-    //     new KeyValuePair<string, string>("client_id", clientId),
-    //     new KeyValuePair<string, string>("client_secret", clientSecret)
-    // });
-
-    //     var response = await Http.PostAsync("https://accounts.spotify.com/api/token", requestBody);
-    //     var content = await response.Content.ReadAsStringAsync();
-
-    //     Console.WriteLine(content);
-
-    //     var tokenObj = System.Text.Json.JsonDocument.Parse(content).RootElement;
-    //     return tokenObj.TryGetProperty("access_token", out var token) ? token.GetString() : null;
-    // }
-    
 }
