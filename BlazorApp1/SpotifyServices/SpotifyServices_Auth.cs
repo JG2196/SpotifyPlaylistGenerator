@@ -36,7 +36,8 @@ namespace BlazorApp1.SpotifyServices
 
             string spotifyAuthAddress = "https://accounts.spotify.com/authorize";
 
-            string nUri = "https://localhost:7262/search";
+            //string nUri = "https://localhost:7262/search";
+            string nUri = "https://localhost:7262/auth/spotifycallback";
             try
             {
                 string scopes = _Configuration["SpotifyWeb:Scopes"];
