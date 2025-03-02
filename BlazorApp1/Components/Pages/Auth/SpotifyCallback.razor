@@ -2,11 +2,10 @@
 @using BlazorApp1.Data;
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject NavigationManager NavigationManager
-@inject HttpClient Http
+@* @inject HttpClient Http *@
 @inject IConfiguration _Configuration
-@inject IJSRuntime JSRuntime
+@* @inject IJSRuntime JSRuntime *@
 @inject ProtectedSessionStorage ProtectedSessionStore
-
 
 @page "/auth/spotifycallback"
 @* @rendermode InteractiveServer *@
@@ -14,27 +13,196 @@
 <h3>SpotifyCallback</h3>
 
 @code {
-
     private bool isInitialized = false;
+    private string? spotifyAuthCode = null;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        string spotifyAuthUrl = "https://localhost:7262/search";
-        //if (firstRender && !isInitialized)
-        //{
-            isInitialized = true;
+        // ✅ Extract Spotify code from URL
+        var uri = new Uri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        spotifyAuthCode = query["code"];
 
-            // Simulate receiving the token from URL parameters (Modify this based on your OAuth implementation)
-            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
-            string code = query["code"] ?? string.Empty;
-            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, ProtectedSessionStore);
-
-            await spotifyAppServices.ExchangeCodeForToken(code);
-        //}
-        NavigationManager.NavigateTo(spotifyAuthUrl, true);
+        Console.WriteLine($"Extracted Spotify auth code: {spotifyAuthCode}");
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !isInitialized && !string.IsNullOrEmpty(spotifyAuthCode))
+        {
+            isInitialized = true; // Prevent multiple executions
+            await ProcessSpotifyAuth();
+        }
+    }
+
+    private async Task ProcessSpotifyAuth()
+    {
+        Console.WriteLine("Processing Spotify authentication...");
+
+        try
+        {
+            if (!string.IsNullOrEmpty(spotifyAuthCode))
+            {
+                // ✅ Process OAuth token exchange
+                SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, ProtectedSessionStore);
+                await spotifyAppServices.ExchangeCodeForToken(spotifyAuthCode);
+                await spotifyAppServices.GetTokenAsync();
+
+                // ✅ Store the token in session storage (only allowed in OnAfterRenderAsync)
+                await ProtectedSessionStore.SetAsync("spotifyToken", spotifyAuthCode);
+            }
+
+            // ✅ Redirect after processing is complete
+            NavigationManager.NavigateTo("https://localhost:7262/search", true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error in ProcessSpotifyAuth: " + ex.Message);
+        }
+    }
+    // private bool isInitialized = false;
+
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     await Task.Delay(1000);
+    //     Console.WriteLine("OnInitializedAsync called");
+    //     await ProcessSpotifyAuth();
+    //     isInitialized = true;
+    // }
+
+    // private async Task ProcessSpotifyAuth()
+    // {
+    //     Console.WriteLine("Processing Spotify authentication...");
+
+    //     try
+    //     {
+    //         string spotifyAuthUrl = "https://localhost:7262/search";
+
+    //         // ✅ Ensure NavigationManager gets the URL correctly
+    //         var uri = new Uri(NavigationManager.Uri);
+    //         var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+    //         string code = query["code"] ?? string.Empty;
+
+    //         Console.WriteLine($"Extracted Spotify auth code: {code}");
+
+    //         if (!string.IsNullOrEmpty(code))
+    //         {
+    //             // ✅ Process OAuth token exchange
+    //             SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, ProtectedSessionStore);
+    //             await spotifyAppServices.ExchangeCodeForToken(code);
+    //             await spotifyAppServices.GetTokenAsync();
+
+    //             // ✅ Store the token in session storage
+    //             await ProtectedSessionStore.SetAsync("spotifyToken", code);
+    //         }
+
+    //         // ✅ Redirect after processing is complete
+    //         NavigationManager.NavigateTo(spotifyAuthUrl, true);
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Console.WriteLine("Error in ProcessSpotifyAuth: " + ex.Message);
+    //     }
+    // }
+
+    // protected override async Task OnAfterRenderAsync(bool firstRender)
+    // {
+    //     if (isInitialized)
+    //     {
+    //         Console.WriteLine("OnAfterRenderAsync after OnInitializedAsync.");
+    //         isInitialized = false;
+    //         //await ProcessSpotifyAuth();
+    //     }
+    // }
+
+    // private async Task ProcessSpotifyAuth()
+    // {
+    //     Console.WriteLine("Processing Spotify authentication...");
+
+    //     try
+    //     {
+    //         //string spotifyAuthUrl = "https://localhost:7262/search";
+
+    //         // ✅ Ensure NavigationManager is only used AFTER render
+    //         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+    //         var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+    //         string code = query["code"] ?? string.Empty;
+
+    //         Console.WriteLine($"Extracted code: {code}");
+
+    //         if (!string.IsNullOrEmpty(code))
+    //         {
+    //             SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, ProtectedSessionStore);
+
+    //             await spotifyAppServices.ExchangeCodeForToken(code);
+    //             await spotifyAppServices.GetTokenAsync();
+    //         }
+
+    //         // ✅ Redirect only after async operations complete
+    //         //NavigationManager.NavigateTo(spotifyAuthUrl, true);
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Console.WriteLine("Error in ProcessSpotifyAuth: " + ex.Message);
+    //     }
+    // }
+    
+
+    // private bool isInitialized = false;
+
+    // protected override void OnInitialized()
+    // {
+    //     string spotifyAuthUrl = "https://localhost:7262/search";
+
+    //     //isInitialized = true; // Prevent multiple executions
+    //     SetCode();
+    //     //await spotifyAppServices.GetTokenAsync();
+    //     //await ProcessSpotifyAuth();
+
+    //     //NavigationManager.NavigateTo(spotifyAuthUrl, true);
+    // }
+
+    // private async Task SetCode() {
+
+    //     var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+    //     var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+    //     string code = query["code"] ?? string.Empty;
+
+    //     ProtectedSessionStore.SetAsync("spotify_code", code);
+    //     Console.WriteLine("session");
+    // }
+
+
+    // private async Task ProcessSpotifyAuth()
+    // {
+    //     Console.WriteLine("Processing Spotify authentication...");
+
+    //     try
+    //     {
+    //         string spotifyAuthUrl = "https://localhost:7262/search";
+
+    //         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+    //         var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+    //         string code = query["code"] ?? string.Empty;
+
+    //         Console.WriteLine($"Extracted code: {code}");
+
+    //         if (!string.IsNullOrEmpty(code))
+    //         {
+    //             SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, ProtectedSessionStore);
+
+    //             await spotifyAppServices.ExchangeCodeForToken(code);
+    //             await spotifyAppServices.GetTokenAsync();
+    //         }
+
+    //         // Redirect only after async operations complete
+    //         NavigationManager.NavigateTo(spotifyAuthUrl, true);
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Console.WriteLine("Error in ProcessSpotifyAuth: " + ex.Message);
+    //     }
+    // }
     // public async Task<string> ExchangeCodeForToken(string code)
     // {
 
