@@ -7,4 +7,10 @@
         public int expires_in { get; set; }
         public string refresh_token { get; set; }
     }
+
+    public class SpotifyUser
+    {
+        public string DisplayName { get; set; }
+        public string Email { get; set; }
+    }
 }
