@@ -13,59 +13,115 @@
 @rendermode InteractiveServer
 
 @* <head>
-    <meta charset="utf-8" />
-    <title>Spotify App</title>
-    <script src="~/bootstrap/spotify.js" type="module"></script>
-</head> *@
-
+    <script src="~/javascript/spotify.js"></script>
+</head>
+ *@
 <PageTitle>Search</PageTitle>
 
 <h1>Search</h1>
 
-@* <input style="width:400px" placeholder="Search..." id="" /> *@
-
 <input @bind="PromptText" placeholder="Enter text here" style="width:400px" />
-<button @onclick="SubmitPrompt">Submit</button>
 
-@* <button onclick="testFunction()">JS link. CLICK ME!!!</button> *@
-<button @onclick="AuthorizeSpotify">Spotify sign in</button>
-<button @onclick="GetAccessToken">Get access token</button>
+<button @onclick="SubmitPrompt">Submit</button>
 <button @onclick="GetProfile">Get profile</button>
 <button @onclick="AuthorizeSignOut">Spotify sign out</button>
 
 <p>You entered: @ResponseText</p>
+
+@* <script type="text/javascript">
+</script> *@
+
 @code {
-    // private string InputText { get; set; } = "";
-    // private string SubmittedText { get; set; } = "";
-
-    // private void SubmitText()
-    // {
-    //     SubmittedText = InputText;
-    //     Console.WriteLine("SubmittedText: " + SubmittedText);
-    // }
-
     private string PromptText { get; set; } = "";
     private string ResponseText { get; set; } = "";
+    private string? AuthAccessToken = null;
+    private string SpotifyCode = string.Empty;
+    private string SpotifyAccessToken = string.Empty;
 
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            string result = GetSpotifyCode();
+            
+            if (!string.IsNullOrEmpty(result))
+            {
+                SpotifyCode = result;
+            }
+            else
+            {
+                AuthorizeSpotify();
+            }
+        }
+        catch (NavigationException navEx)
+        {
+            Console.WriteLine("OnInitializedAsync navEx: " + navEx.Message);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("OnInitializedAsync Ex: " + ex.Message);
+        }
+    }
+
+    private string GetSpotifyCode()
+    {
+        string? spotifyCode = null;
+        try 
+        {
+            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            spotifyCode = query["code"] ?? null;
+            Console.WriteLine("GetSpotifyCode spotifyCode: " + spotifyCode);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("GetSpotifyCode Ex: " + ex.Message);
+        }
+
+        return spotifyCode;
+    }
 
     private void SubmitPrompt()
     {
-        OpenAIServices openAIServices = new OpenAIServices();
+        try
+        {
+            OpenAIServices openAIServices = new OpenAIServices();
 
-        ChatClient chatClientService = openAIServices.OpenAIClientService(_Configuration);
+            ChatClient chatClientService = openAIServices.OpenAIClientService(_Configuration);
 
-        ChatCompletion completion = chatClientService.CompleteChat(PromptText);
+            ChatCompletion completion = chatClientService.CompleteChat(PromptText);
 
-        ResponseText = completion.Content[0].Text;
+            ResponseText = completion.Content[0].Text;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("SubmitPrompt Ex: " + ex.Message);
+        }
     }
 
     private void AuthorizeSpotify()
     {
-        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, ProtectedSessionStore);
+        string? spotifyAuthUrl = null;
 
-        string spotifyAuthUrl = spotifyAppServices.SpotifySignInAuth();
+        try
+        {
+            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, ProtectedSessionStore);
 
-        NavigationManager.NavigateTo(spotifyAuthUrl, true);
+            spotifyAuthUrl = spotifyAppServices.SpotifySignInAuth();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("AuthorizeSpotify Ex: " + ex.Message);
+        }
+
+        if (!string.IsNullOrEmpty(spotifyAuthUrl))
+        {
+            NavigationManager.NavigateTo(spotifyAuthUrl, true);
+        }
+        else
+        {
+            Console.WriteLine("AuthorizeSpotify: spotifyAuthUrl is null");
+        }
     }
 
     private async Task AuthorizeSignOut()
@@ -73,50 +129,72 @@
         string signoutUrl = "https://accounts.spotify.com/logout/";
         await JSRuntime.InvokeVoidAsync("open", signoutUrl, "_blank");
         await RemoveToken();
+        //May need to refresh or redirect application page???
     }
 
     private async Task GetAccessToken()
     {
-
-        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
-        string code = query["code"] ?? string.Empty;
         SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, ProtectedSessionStore);
 
-        await spotifyAppServices.ExchangeCodeForToken(code);
-        await spotifyAppServices.GetTokenAsync();
+        try
+        {
+            if (!string.IsNullOrEmpty(SpotifyAccessToken))
+            {
+                Console.WriteLine("GetAccessToken SpotifyCode: " + SpotifyCode);
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(SpotifyCode))
+            {
+                SpotifyAccessToken = await spotifyAppServices.ExchangeCodeForToken(SpotifyCode);
+                Console.WriteLine("GetAccessToken SpotifyAccessToken: " + SpotifyAccessToken);
+            }
+            else
+            {
+                Console.WriteLine("GetAccessToken: SpotifyCode is null or Empty!");
+            }
+        }
+        catch (Exception ex) 
+        {
+            Console.WriteLine("GetAccessToken Ex: " + ex.Message);
+        }
     }
 
     private async Task GetProfile()
     {
-        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, ProtectedSessionStore);
-        string token = await spotifyAppServices.GetTokenAsync();
-        //string token = await GetAccessToken();
-        Console.WriteLine("GetAccessToken: " + token);
+        try
+        {
+            if (string.IsNullOrEmpty(SpotifyAccessToken))
+            {
+                await GetAccessToken();
+            }
 
-        Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        var response = await Http.GetAsync("https://api.spotify.com/v1/me");
-        var content = await response.Content.ReadAsStringAsync();
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", SpotifyAccessToken);
+            var response = await Http.GetAsync("https://api.spotify.com/v1/me");
+            var content = await response.Content.ReadAsStringAsync();
 
-        var profile = System.Text.Json.JsonDocument.Parse(content).RootElement;
+            var profile = System.Text.Json.JsonDocument.Parse(content).RootElement;
 
-        var displayName = profile.GetProperty("display_name").GetString();
-        //var email = profile.GetProperty("email").GetString();
-        var spotifyId = profile.GetProperty("id").GetString();
-        //var profileImageUrl = profile.GetProperty("images").EnumerateArray().FirstOrDefault().GetProperty("url").GetString();
+            var displayName = profile.GetProperty("display_name").GetString();
+            var spotifyId = profile.GetProperty("id").GetString();
 
-        Console.WriteLine($"Name: {displayName}, ID: {spotifyId}");
-        //, Email: {email}, ID: {spotifyId}");
-    }
-
-    private async Task<string> GetToken()
-    {
-        return await JSRuntime.InvokeAsync<string>("sessionStorage.getItem", "spotify_token");
+            Console.WriteLine($"Name: {displayName}, ID: {spotifyId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("GetProfile Ex: " + ex.Message);
+        }
     }
 
     private async Task RemoveToken()
     {
-        await JSRuntime.InvokeVoidAsync("sessionStorage.removeItem", "spotify_token");
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("sessionStorage.removeItem", "spotify_token");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("RemoveToken Ex: " + ex.Message);
+        }
     }
-
 }
