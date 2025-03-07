@@ -1,10 +1,8 @@
 ﻿using Microsoft.JSInterop;
-using static System.Net.WebRequestMethods;
 using BlazorApp1.Data;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
-using Microsoft.AspNetCore.Components;
 
 namespace BlazorApp1.SpotifyServices
 {
@@ -36,8 +34,7 @@ namespace BlazorApp1.SpotifyServices
 
             string spotifyAuthAddress = "https://accounts.spotify.com/authorize";
 
-            //string nUri = "https://localhost:7262/search";
-            string nUri = "https://localhost:7262/auth/spotifycallback";
+            string nUri = "https://localhost:7262/search";
             try
             {
                 string scopes = _Configuration["SpotifyWeb:Scopes"];
@@ -52,46 +49,36 @@ namespace BlazorApp1.SpotifyServices
             return spotifyAuthUrl;
         }
 
-        public async Task ExchangeCodeForToken(string code)
+        public async Task<string?> ExchangeCodeForToken(string code)
         {
-            HttpClient httpClient = new HttpClient();
+            string? accessToken = null;
 
-            var requestContent = new FormUrlEncodedContent(new[]
+            try
             {
-            new KeyValuePair<string, string>("grant_type", "authorization_code"),
-            new KeyValuePair<string, string>("code", code),
-            new KeyValuePair<string, string>("redirect_uri", redirectUri),
-            new KeyValuePair<string, string>("client_id", clientId),
-            new KeyValuePair<string, string>("client_secret", clientSecret),
-            });
 
-            var response = await httpClient.PostAsync("https://accounts.spotify.com/api/token", requestContent);
-            var responseContent = await response.Content.ReadFromJsonAsync<SpotifyTokenResponse>();
+                HttpClient httpClient = new HttpClient();
 
-            if (responseContent != null)
-            {
-                //ProtectedSessionStorage protectedSessionStorage = new ProtectedSessionStorage();
-                _ProtectedSessionStorage.SetAsync("spotify_token", responseContent.access_token);
-                Console.WriteLine("ExchangeCodeForToken accessToken: " + responseContent.access_token);
-                // Store the token securely (e.g., local storage or session)
-                //*/*/*/*/*/*/Navigation.NavigateTo("/");*/*/*/*/*/*/
-                //return responseContent;
+                var requestContent = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("grant_type", "authorization_code"),
+                    new KeyValuePair<string, string>("code", code),
+                    new KeyValuePair<string, string>("redirect_uri", redirectUri),
+                    new KeyValuePair<string, string>("client_id", clientId),
+                    new KeyValuePair<string, string>("client_secret", clientSecret),
+                });
+
+                var response = await httpClient.PostAsync("https://accounts.spotify.com/api/token", requestContent);
+                var responseContent = await response.Content.ReadFromJsonAsync<SpotifyTokenResponse>();
+
+
+                accessToken = responseContent.access_token;
             }
-            //else
-            //{
-            //    return null;
-            //}
-        }
-
-        public async Task<string> GetTokenAsync()
-        {
-            var result = await _ProtectedSessionStorage.GetAsync<string>("spotify_token");
-            if (result.Success)
+            catch (Exception ex)
             {
-                Console.WriteLine($"Stored Value: {result.Value}");
-                return result.Value;
+                Console.WriteLine("ExchangeCodeForToken Ex: " + ex.Message);
             }
-            return "";
+
+            return accessToken;
         }
-}
+    }
 }
