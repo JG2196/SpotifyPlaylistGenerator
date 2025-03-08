@@ -12,19 +12,16 @@
 @page "/search"
 @rendermode InteractiveServer
 
-@* <head>
-    <script src="~/javascript/spotify.js"></script>
-</head>
- *@
 <PageTitle>Search</PageTitle>
 
-<h1>Search</h1>
-
+<div class="w3-bar">
+    <h1 class="w3-bar-item">Search</h1>
+    <button class="w3-bar-item w3-right" @onclick="AuthorizeSignOut">Spotify sign out</button>
+</div>
 <input @bind="PromptText" placeholder="Enter text here" style="width:400px" />
 
 <button @onclick="SubmitPrompt">Submit</button>
 <button @onclick="GetProfile">Get profile</button>
-<button @onclick="AuthorizeSignOut">Spotify sign out</button>
 
 <p>You entered: @ResponseText</p>
 
@@ -127,9 +124,12 @@
     private async Task AuthorizeSignOut()
     {
         string signoutUrl = "https://accounts.spotify.com/logout/";
+        //Open new tab to signout
         await JSRuntime.InvokeVoidAsync("open", signoutUrl, "_blank");
         await RemoveToken();
-        //May need to refresh or redirect application page???
+        //Call JS function
+        await JSRuntime.InvokeVoidAsync("navigate", "");
+        
     }
 
     private async Task GetAccessToken()
