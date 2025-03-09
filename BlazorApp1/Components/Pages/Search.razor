@@ -1,13 +1,18 @@
 ﻿@using OpenAI.Chat
+@using OpenAI.Assistants
 @using OpenAIServices;
 @using SpotifyServices;
 @using BlazorApp1.Data;
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using Newtonsoft.Json;
+
 @inject NavigationManager NavigationManager
 @inject HttpClient Http;
 @inject IConfiguration _Configuration
 @inject IJSRuntime JSRuntime
 @inject ProtectedSessionStorage ProtectedSessionStore
+@inject OpenAI.OpenAIClient OpenAIClient
+
 
 @page "/search"
 @rendermode InteractiveServer
@@ -22,25 +27,36 @@
 
 <button @onclick="SubmitPrompt">Submit</button>
 <button @onclick="GetProfile">Get profile</button>
-
+<button @onclick="GetAssistant">Assistant</button>
 <p>You entered: @ResponseText</p>
 
 @* <script type="text/javascript">
 </script> *@
 
 @code {
+
+    public class AIAssistant {
+        public string Name = string.Empty;
+        public string ID = string.Empty;
+        public string Object = string.Empty;
+        public string Model = string.Empty;
+    }
+
     private string PromptText { get; set; } = "";
     private string ResponseText { get; set; } = "";
     private string? AuthAccessToken = null;
     private string SpotifyCode = string.Empty;
     private string SpotifyAccessToken = string.Empty;
 
+    private string userMessage = "";
+    private string responseMessage = "";
+
     protected override async Task OnInitializedAsync()
     {
         try
         {
             string result = GetSpotifyCode();
-            
+
             if (!string.IsNullOrEmpty(result))
             {
                 SpotifyCode = result;
@@ -78,7 +94,48 @@
         return spotifyCode;
     }
 
-    private void SubmitPrompt()
+    private async Task GetAssistant()
+    {
+        string apiKey = _Configuration["OpenAI:APIKey"]; // Get the API Key from Open AI Account
+        string assistant_id = _Configuration["OpenAI:AssistantId"]; // Get the assistant id from Open AI Account under "Assistants" menu.
+
+        string assitantsAPIURL = "https://api.openai.com/v1/assistants/" + assistant_id; // Returns list of all assistants
+                                                                                         //var threadAPIUrl = "https://api.openai.com/v1/threads"; // Returns list of all assistants
+                                                                                         //var runAPIUrl = "https://api.openai.com/v1/threads/runs";
+        string assistantVersion = "assistants=v2";
+
+        //#pragma warning disable OPENAI001
+        AIAssistant assistant = new AIAssistant();
+
+        try
+        {
+            using (HttpClient client = new HttpClient())
+            {
+
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+                client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
+                HttpResponseMessage response = await client.GetAsync(assitantsAPIURL);
+                string responseContent = await response.Content.ReadAsStringAsync();
+
+                assistant = JsonConvert.DeserializeObject<AIAssistant>(responseContent);
+
+                Console.WriteLine($"GetAssistant Name: {assistant.Name}, ID: {assistant.ID}, Object: {assistant.Object}, Model: {assistant.Model}");
+
+                if (assistant == null)
+                {
+                    throw new Exception("GetAssistant: Invalid assistants");
+                }
+
+                //Http.DefaultRequestHeaders.Clear();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("GetAssistant Ex: " + ex.Message);
+        }
+    }
+
+    private async void SubmitPrompt()
     {
         try
         {
