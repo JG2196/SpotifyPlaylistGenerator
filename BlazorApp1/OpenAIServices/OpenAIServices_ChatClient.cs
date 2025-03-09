@@ -22,5 +22,6 @@ namespace BlazorApp1.OpenAIServices
 
             return chatClientService;
         }
+
     }
 }
