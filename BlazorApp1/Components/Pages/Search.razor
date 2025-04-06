@@ -1,10 +1,14 @@
-﻿@using OpenAI.Chat
+﻿@* @using OpenAI.Chat *@
+@using OpenAI.Chat;
 @using OpenAI.Assistants
 @using OpenAIServices;
 @using SpotifyServices;
 @using BlazorApp1.Data;
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @using Newtonsoft.Json;
+@using System.Text;
+@using Newtonsoft.Json.Linq;
+@using OpenAI;
 
 @inject NavigationManager NavigationManager
 @inject HttpClient Http;
@@ -13,7 +17,10 @@
 @inject ProtectedSessionStorage ProtectedSessionStore
 @inject OpenAI.OpenAIClient OpenAIClient
 
-
+<head>
+    <link rel="stylesheet" type="text/css" href="~/w3.css" />
+    <script type="text/javascript" src="~/javascript/spotify.js"></script>
+</head>
 @page "/search"
 @rendermode InteractiveServer
 
@@ -27,11 +34,15 @@
 
 <button @onclick="SubmitPrompt">Submit</button>
 <button @onclick="GetProfile">Get profile</button>
+<button @onclick="GetPlaylists">Playlists</button>
 <button @onclick="GetAssistant">Assistant</button>
 <p>You entered: @ResponseText</p>
 
-@* <script type="text/javascript">
-</script> *@
+<div>
+    <div class="w3-bar" id="spotifyPlaylistsDisplay"></div>
+</div>
+
+
 
 @code {
 
@@ -42,6 +53,65 @@
         public string Model = string.Empty;
     }
 
+    public class Run
+    {
+        public string Id { get; set; }
+    }
+    public class Thread
+    {
+        public string Id { get; set; }
+    }
+    public class ThreadList
+    {
+        public List<Thread> Data { get; set; }
+    }
+
+    public class RootObject
+    {
+        public string Object { get; set; }
+        public List<Data> Data { get; set; }
+        public string FirstId { get; set; }
+        public string LastId { get; set; }
+        public bool HasMore { get; set; }
+    }
+
+
+
+    public class Song {
+        public string Title { get; set; }
+        public string Artist { get; set; }
+        public string Spotify_Id { get; set; }
+    }
+
+    public class Data
+    {
+        public string Id { get; set; }
+        public string ThreadId { get; set; }
+        public string Role { get; set; }
+        public List<Content> Content { get; set; }
+        public string AssistantId { get; set; }
+        public string RunId { get; set; }
+    }
+
+    public class Content
+    {
+        public string Text { get; set; }
+        public Value Value { get; set; }
+    }
+    public class Value {
+        List<Playlist> listPlaylist;
+    }
+    public class Playlist {
+        public string Title { get; set; }
+        public string Artist { get; set; }
+    }
+
+    public class Text
+    {
+        public string Value { get; set; }
+        public List<object> Annotations { get; set; }
+    }
+
     private string PromptText { get; set; } = "";
     private string ResponseText { get; set; } = "";
     private string? AuthAccessToken = null;
@@ -50,6 +120,16 @@
 
     private string userMessage = "";
     private string responseMessage = "";
+
+    public class Playlist2 {
+        List<Track> Playlist = new List<Track>();
+    }
+
+    public class Track {
+        public string track_name { get; set; }
+        public string track_artist { get; set; }
+        public string spotify_id { get; set; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -94,14 +174,14 @@
         return spotifyCode;
     }
 
-    private async Task GetAssistant()
+    private async void GetAssistant()
     {
         string apiKey = _Configuration["OpenAI:APIKey"]; // Get the API Key from Open AI Account
         string assistant_id = _Configuration["OpenAI:AssistantId"]; // Get the assistant id from Open AI Account under "Assistants" menu.
 
         string assitantsAPIURL = "https://api.openai.com/v1/assistants/" + assistant_id; // Returns list of all assistants
-                                                                                         //var threadAPIUrl = "https://api.openai.com/v1/threads"; // Returns list of all assistants
-                                                                                         //var runAPIUrl = "https://api.openai.com/v1/threads/runs";
+        var threadAPIUrl = "https://api.openai.com/v1/threads"; // Returns list of all assistants
+        var runAPIUrl = "https://api.openai.com/v1/threads/runs";
         string assistantVersion = "assistants=v2";
 
         //#pragma warning disable OPENAI001
@@ -125,13 +205,131 @@
                 {
                     throw new Exception("GetAssistant: Invalid assistants");
                 }
-
-                //Http.DefaultRequestHeaders.Clear();
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine("GetAssistant Ex: " + ex.Message);
+        }
+
+        /////////
+        ///// Step 2 : Create a new thread object and attach message
+
+        var requestData = new
+        {
+            messages = new[]
+           {
+                    new { role = "user", content = "Im in the mood for something upbeat and jazzy, I like artists like JUNGLE and Ezra Collective. Json." }
+                }
+        };
+        string jsonPayload = JsonConvert.SerializeObject(requestData);
+        string threadId = string.Empty;
+        using (HttpClient client = new HttpClient())
+        {
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+            client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
+            HttpResponseMessage response = await client.PostAsync(threadAPIUrl,
+                new StringContent(jsonPayload, Encoding.UTF8, "application/json"));
+            response.EnsureSuccessStatusCode();
+
+            string responseBody = await response.Content.ReadAsStringAsync();
+            var threadList = JsonConvert.DeserializeObject<Thread>(responseBody);
+
+            if (response.IsSuccessStatusCode)
+            {
+                threadId = threadList.Id;
+            }
+
+            Console.WriteLine(responseBody);
+        }
+
+        // Step 3 : Create a new Run object
+
+        string runId = string.Empty;
+        // Create the JSON payload
+
+        // var payload = new
+        // {
+        //     thread_id = threadId,
+        //     assistant_id = assistant.ID,
+        //     //instructions = "Respond in JSON format.",
+        //     response_format = "json_object"  // 👈 This forces a JSON response
+        // };
+        var payload = new
+        {
+            //thread_id = threadId,
+            assistant_id = assistant.ID,
+            //response_format = "json_object"
+        };
+
+        try{
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+                client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
+                string jsonPayload1 = JsonConvert.SerializeObject(payload);
+
+                HttpResponseMessage response = await client.PostAsync("https://api.openai.com/v1/threads/" + threadId + "/runs",
+                                                                   new StringContent(jsonPayload1, Encoding.UTF8, "application/json"));
+                response.EnsureSuccessStatusCode();
+                string runResponse = await response.Content.ReadAsStringAsync();
+                var runList = JsonConvert.DeserializeObject<Run>(runResponse);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    runId = runList.Id;
+                }
+
+            }
+        }
+        catch (Exception ex){
+            Console.WriteLine("response Ex: " + ex.Message);
+        }
+
+        // Step 4 Retrieve Run object and check the run status
+
+        using (HttpClient client = new HttpClient())
+        {
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+            client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
+            HttpResponseMessage response = await client.GetAsync("https://api.openai.com/v1/threads/" + threadId + "/runs/" + runId);
+            response.EnsureSuccessStatusCode();
+            if (response.IsSuccessStatusCode)
+            {
+
+                // STEP 5 : Display Assistant Response
+
+                using (HttpClient clientMessage = new())
+                {
+                    clientMessage.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+                    clientMessage.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
+                    HttpResponseMessage responseMessage = await clientMessage.GetAsync("https://api.openai.com/v1/threads/" + threadId + "/messages");
+                    responseMessage.EnsureSuccessStatusCode();
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        string runResponse = await responseMessage.Content.ReadAsStringAsync();
+
+                        JObject jsonObject = JObject.Parse(runResponse);
+                        //Console.WriteLine("Valid JSON object received.");
+                        //Console.WriteLine("Valid JSON object received: " + jsonObject);
+                        //jsonObject.Root;
+
+                        var messages = jsonObject["data"];
+
+                        Data rootObject = JsonConvert.DeserializeObject<Data>(runResponse);
+                        // foreach (var data in rootObject.songs)
+                        // {
+                        //     Console.WriteLine($"ID: {data.Title}, Role: {data.Artist}");
+                        //     // foreach (var content in data.Content)
+                        //     // {
+                        //     //     // Print response from the API
+                        //     //     Console.WriteLine($"Content Type: {content.Type}, Value: {content.Text.Value}");
+
+                        //     // }
+                        // }
+                    }
+                }
+            }
         }
     }
 
@@ -139,6 +337,10 @@
     {
         try
         {
+            string input = "```json";
+            string input2 = "```";
+
+
             OpenAIServices openAIServices = new OpenAIServices();
 
             ChatClient chatClientService = openAIServices.OpenAIClientService(_Configuration);
@@ -146,11 +348,26 @@
             ChatCompletion completion = chatClientService.CompleteChat(PromptText);
 
             ResponseText = completion.Content[0].Text;
+
+            string result = ResponseText.Replace(input, "");
+            string result2 = result.Replace(input2, "");
+
+            Playlist2 playlist2 = new Playlist2(); 
+
+            playlist2 = JsonConvert.DeserializeObject<Playlist2>(result2);
         }
         catch (Exception ex)
         {
             Console.WriteLine("SubmitPrompt Ex: " + ex.Message);
         }
+    }
+
+    private async void SubmitPrompt2() {
+
+        var apiKey = "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";
+
+
+
     }
 
     private void AuthorizeSpotify()
@@ -186,7 +403,7 @@
         await RemoveToken();
         //Call JS function
         await JSRuntime.InvokeVoidAsync("navigate", "");
-        
+
     }
 
     private async Task GetAccessToken()
@@ -241,6 +458,102 @@
         {
             Console.WriteLine("GetProfile Ex: " + ex.Message);
         }
+    }
+
+    public class SpotifyPlaylists 
+    {
+        public string Next { get; set; }
+        public int Total { get; set; }
+        public List<PlaylistItem> Items = new List<PlaylistItem>();
+    }
+
+    public class PlaylistItem
+    {
+        public string Description { get; set; }
+        public string Href { get; set; }
+        public string Id { get; set; }
+        public List<Image> Images { get; set; }
+        public string Name { get; set; }
+        public SpotifyOwner Owner { get; set; }
+        public Tracks Tracks { get; set; }
+    }
+    public class Image
+    {
+        public string Url { get; set; }
+        public int? Height { get; set; }
+        public int? Width { get; set; }
+    }
+    public class SpotifyOwner
+    {
+        public string DisplayName { get; set; }
+    }
+    public class Tracks
+    {
+        public int Total { get; set; }
+    }
+
+    private async Task GetPlaylists() {
+
+        List<PlaylistItem> listPlaylistItems = new List<PlaylistItem>();
+
+        if (string.IsNullOrEmpty(SpotifyAccessToken))
+        {
+            await GetAccessToken();
+        }
+
+        try
+        {
+            string pageUrl = "https://api.spotify.com/v1/me/playlists";
+            bool bPagingComplete = false;
+
+            while (!bPagingComplete)
+            {
+                SpotifyPlaylists spotifyPlaylists = await GetSpotifyPlaylists(SpotifyAccessToken, pageUrl);
+
+                foreach (PlaylistItem playlist in spotifyPlaylists.Items)
+                {
+                    listPlaylistItems.Add(playlist);
+                }
+
+                if (string.IsNullOrEmpty(spotifyPlaylists.Next))
+                {
+                    bPagingComplete = true;
+                }
+                else
+                {
+                    pageUrl = spotifyPlaylists.Next;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("GetPlaylists ex: " + ex.Message);
+        }
+        Console.WriteLine("GetPlaylists playlists: " + listPlaylistItems);
+
+        string result = JsonConvert.SerializeObject(listPlaylistItems);
+
+        await JSRuntime.InvokeVoidAsync("spotifyDisplayPlaylists", result);
+    }
+
+    //Request next page
+    public async Task<SpotifyPlaylists> GetSpotifyPlaylists(string accessToken, string pageUrl) {
+
+        SpotifyPlaylists spotifyPlaylists = new SpotifyPlaylists();
+
+        try
+        {
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+            var response = await Http.GetAsync(pageUrl);
+            var content = await response.Content.ReadAsStringAsync();
+            spotifyPlaylists = JsonConvert.DeserializeObject<SpotifyPlaylists>(content);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("GetSpotifyPlaylists ex: " + ex.Message);
+        }
+
+        return spotifyPlaylists;
     }
 
     private async Task RemoveToken()
