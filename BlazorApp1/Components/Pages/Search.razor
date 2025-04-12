@@ -27,19 +27,21 @@
 <PageTitle>Search</PageTitle>
 
 <div class="w3-bar">
-    <h1 class="w3-bar-item">Search</h1>
     <button class="w3-bar-item w3-right" @onclick="AuthorizeSignOut">Spotify sign out</button>
+    <h5 class="w3-right" style="margin:8px"><b id="user_id"></b></h5>
 </div>
+<h1 class="w3-bar-item">Search</h1>
 <input @bind="PromptText" placeholder="Enter text here" style="width:400px" />
 
 <button @onclick="SubmitPrompt">Submit</button>
-<button @onclick="GetProfile">Get profile</button>
-<button @onclick="GetPlaylists">Playlists</button>
 <button @onclick="GetAssistant">Assistant</button>
 <p>You entered: @ResponseText</p>
 
 <div>
     <div class="w3-bar" id="spotifyPlaylistsDisplay"></div>
+    <div id="spotifyPlaylistDisplay" style="display:none">
+        <h1><b id="playlistName"></b></h1>
+    </div>
 </div>
 
 
@@ -52,7 +54,6 @@
         public string Object = string.Empty;
         public string Model = string.Empty;
     }
-
     public class Run
     {
         public string Id { get; set; }
@@ -65,7 +66,6 @@
     {
         public List<Thread> Data { get; set; }
     }
-
     public class RootObject
     {
         public string Object { get; set; }
@@ -74,15 +74,11 @@
         public string LastId { get; set; }
         public bool HasMore { get; set; }
     }
-
-
-
     public class Song {
         public string Title { get; set; }
         public string Artist { get; set; }
         public string Spotify_Id { get; set; }
     }
-
     public class Data
     {
         public string Id { get; set; }
@@ -92,7 +88,6 @@
         public string AssistantId { get; set; }
         public string RunId { get; set; }
     }
-
     public class Content
     {
         public string Text { get; set; }
@@ -105,33 +100,76 @@
         public string Title { get; set; }
         public string Artist { get; set; }
     }
-
     public class Text
     {
         public string Value { get; set; }
         public List<object> Annotations { get; set; }
     }
-
     private string PromptText { get; set; } = "";
     private string ResponseText { get; set; } = "";
     private string? AuthAccessToken = null;
     private string SpotifyCode = string.Empty;
     private string SpotifyAccessToken = string.Empty;
-
     private string userMessage = "";
     private string responseMessage = "";
-
     public class Playlist2 {
         List<Track> Playlist = new List<Track>();
     }
-
     public class Track {
         public string track_name { get; set; }
         public string track_artist { get; set; }
         public string spotify_id { get; set; }
     }
 
-    protected override async Task OnInitializedAsync()
+    public class AuthSpotifyUser
+    {
+        public string DisplayName { get; set; }
+        public string SpotifyID { get; set; }
+    }
+    public class SpotifyPlaylists
+    {
+        public string Next { get; set; }
+        public int Total { get; set; }
+        public List<PlaylistItem> Items = new List<PlaylistItem>();
+    }
+    public class PlaylistItem
+    {
+        public string Description { get; set; }
+        public string Href { get; set; }
+        public string Id { get; set; }
+        public List<Image> Images { get; set; }
+        public string Name { get; set; }
+        public SpotifyOwner Owner { get; set; }
+        public Tracks Tracks { get; set; }
+    }
+    public class Image
+    {
+        public string Url { get; set; }
+        public int? Height { get; set; }
+        public int? Width { get; set; }
+    }
+    public class SpotifyOwner
+    {
+        public string DisplayName { get; set; }
+    }
+    public class Tracks
+    {
+        public int Total { get; set; }
+    }
+
+    public bool bFoundUser = false;
+
+    //Prevent loops on render
+    private bool _hasInitialized = false;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_hasInitialized)
+        {
+            _hasInitialized = true;
+            await InitSpotifyFlow();
+        }
+    }
+    private async Task InitSpotifyFlow()
     {
         try
         {
@@ -140,6 +178,20 @@
             if (!string.IsNullOrEmpty(result))
             {
                 SpotifyCode = result;
+
+                if (!bFoundUser)
+                {
+                    string authSpotifyUser = await GetProfile();
+                    string spotifyPlaylist = await GetPlaylists();
+
+                    if (authSpotifyUser != null)
+                    {
+                        bFoundUser = true;
+                        await JSRuntime.InvokeVoidAsync("spotifySetSearchDisplay", [authSpotifyUser, spotifyPlaylist]);
+                    }
+
+                }
+
             }
             else
             {
@@ -155,7 +207,6 @@
             Console.WriteLine("OnInitializedAsync Ex: " + ex.Message);
         }
     }
-
     private string GetSpotifyCode()
     {
         string? spotifyCode = null;
@@ -173,7 +224,6 @@
 
         return spotifyCode;
     }
-
     private async void GetAssistant()
     {
         string apiKey = _Configuration["OpenAI:APIKey"]; // Get the API Key from Open AI Account
@@ -332,7 +382,6 @@
             }
         }
     }
-
     private async void SubmitPrompt()
     {
         try
@@ -361,7 +410,6 @@
             Console.WriteLine("SubmitPrompt Ex: " + ex.Message);
         }
     }
-
     private async void SubmitPrompt2() {
 
         var apiKey = "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";
@@ -369,7 +417,6 @@
 
 
     }
-
     private void AuthorizeSpotify()
     {
         string? spotifyAuthUrl = null;
@@ -394,7 +441,6 @@
             Console.WriteLine("AuthorizeSpotify: spotifyAuthUrl is null");
         }
     }
-
     private async Task AuthorizeSignOut()
     {
         string signoutUrl = "https://accounts.spotify.com/logout/";
@@ -405,7 +451,6 @@
         await JSRuntime.InvokeVoidAsync("navigate", "");
 
     }
-
     private async Task GetAccessToken()
     {
         SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, ProtectedSessionStore);
@@ -433,11 +478,14 @@
             Console.WriteLine("GetAccessToken Ex: " + ex.Message);
         }
     }
-
-    private async Task GetProfile()
+    private async Task<string> GetProfile()
     {
+        string spotifyUserResult = null;
+
         try
         {
+            AuthSpotifyUser authSpotifyUser = new AuthSpotifyUser();
+
             if (string.IsNullOrEmpty(SpotifyAccessToken))
             {
                 await GetAccessToken();
@@ -452,49 +500,22 @@
             var displayName = profile.GetProperty("display_name").GetString();
             var spotifyId = profile.GetProperty("id").GetString();
 
+            authSpotifyUser.DisplayName = displayName;
+            authSpotifyUser.SpotifyID = spotifyId;
+
             Console.WriteLine($"Name: {displayName}, ID: {spotifyId}");
+            spotifyUserResult = JsonConvert.SerializeObject(authSpotifyUser);
         }
         catch (Exception ex)
         {
             Console.WriteLine("GetProfile Ex: " + ex.Message);
         }
-    }
 
-    public class SpotifyPlaylists 
-    {
-        public string Next { get; set; }
-        public int Total { get; set; }
-        public List<PlaylistItem> Items = new List<PlaylistItem>();
+        return spotifyUserResult;
     }
+    private async Task<string> GetPlaylists() {
 
-    public class PlaylistItem
-    {
-        public string Description { get; set; }
-        public string Href { get; set; }
-        public string Id { get; set; }
-        public List<Image> Images { get; set; }
-        public string Name { get; set; }
-        public SpotifyOwner Owner { get; set; }
-        public Tracks Tracks { get; set; }
-    }
-    public class Image
-    {
-        public string Url { get; set; }
-        public int? Height { get; set; }
-        public int? Width { get; set; }
-    }
-    public class SpotifyOwner
-    {
-        public string DisplayName { get; set; }
-    }
-    public class Tracks
-    {
-        public int Total { get; set; }
-    }
-
-    private async Task GetPlaylists() {
-
-        List<PlaylistItem> listPlaylistItems = new List<PlaylistItem>();
+        string playlistsResult = null;
 
         if (string.IsNullOrEmpty(SpotifyAccessToken))
         {
@@ -503,6 +524,8 @@
 
         try
         {
+            List<PlaylistItem> listPlaylistItems = new List<PlaylistItem>();
+
             string pageUrl = "https://api.spotify.com/v1/me/playlists";
             bool bPagingComplete = false;
 
@@ -524,18 +547,18 @@
                     pageUrl = spotifyPlaylists.Next;
                 }
             }
+
+            playlistsResult = JsonConvert.SerializeObject(listPlaylistItems);
         }
         catch (Exception ex)
         {
             Console.WriteLine("GetPlaylists ex: " + ex.Message);
         }
-        Console.WriteLine("GetPlaylists playlists: " + listPlaylistItems);
 
-        string result = JsonConvert.SerializeObject(listPlaylistItems);
-
-        await JSRuntime.InvokeVoidAsync("spotifyDisplayPlaylists", result);
+        //string result = JsonConvert.SerializeObject(listPlaylistItems);
+        return playlistsResult;
+        //await JSRuntime.InvokeVoidAsync("spotifyDisplayPlaylists", result);
     }
-
     //Request next page
     public async Task<SpotifyPlaylists> GetSpotifyPlaylists(string accessToken, string pageUrl) {
 
@@ -555,7 +578,6 @@
 
         return spotifyPlaylists;
     }
-
     private async Task RemoveToken()
     {
         try
@@ -566,5 +588,14 @@
         {
             Console.WriteLine("RemoveToken Ex: " + ex.Message);
         }
+    }
+
+    [JSInvokable]
+    public static Task TestTask()
+    {
+
+        Console.WriteLine("TestTask Start!");
+        
+        return Task.CompletedTask;
     }
 }

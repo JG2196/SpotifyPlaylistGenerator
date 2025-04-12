@@ -1,4 +1,17 @@
-﻿function spotifyDisplayPlaylists(jsonListPlaylists) {
+﻿function spotifySetSearchDisplay(jsonDataUser, jsonListPlaylists) {
+
+    spotifyDisplayUserInfo(jsonDataUser);
+    spotifyDisplayPlaylists(jsonListPlaylists);
+
+}
+function spotifyDisplayUserInfo(jsonDataUser) {
+    console.debug("spotifyDisplayUserInfo");
+
+    let obj = JSON.parse(jsonDataUser);
+
+    document.getElementById("user_id").innerText = obj.SpotifyID;
+}
+function spotifyDisplayPlaylists(jsonListPlaylists) {
     
     let obj = JSON.parse(jsonListPlaylists);
 
@@ -18,6 +31,8 @@
 
         elm_div.style.paddingTop = "16px";
         elm_div.style.margin = "8px";
+        elm_div.style.cursor = "pointer";
+        elm_div.setAttribute("onclick", `spotifyOpenPlaylist('${obj[index].Id}', '${obj[index].Name}')`);
 
         elm_img = document.createElement("img");
         elm_img.classList.add("w3-round-large");
@@ -38,6 +53,18 @@
 
         spotifyPlaylistsDisplay.appendChild(elm_div);
     }
+}
+function spotifyOpenPlaylist(playlistId, playlistName) {
+    document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
+    document.getElementById("spotifyPlaylistDisplay").style.display = "";
+
+    document.getElementById("playlistName").innerText = playlistName;
+
+    testAsyncTask();
+}
+function testAsyncTask() {
+    console.debug("testAsyncTask START!");
+    DotNet.invokeMethodAsync('BlazorApp1', 'TestTask');
 }
 function spotifyAlterString(str) {
 
