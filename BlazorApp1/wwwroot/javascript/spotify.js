@@ -55,8 +55,8 @@ function spotifyDisplayPlaylists(jsonListPlaylists) {
     }
 }
 function spotifyOpenPlaylist(playlistName) {
-    var selectedPlaylist = document.getElementById("selectedPlaylist");
-    selectedPlaylist.innerHTML = "";
+    //var selectedPlaylist = document.getElementById("selectedPlaylist");
+    //selectedPlaylist.innerHTML = "";
 
     document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
     document.getElementById("spotifyPlaylistDisplay").style.display = "";
