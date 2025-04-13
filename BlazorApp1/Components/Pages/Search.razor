@@ -28,7 +28,10 @@
 
 <div class="w3-bar">
     <button class="w3-bar-item w3-right" @onclick="AuthorizeSignOut">Spotify sign out</button>
-    <h5 class="w3-right" style="margin:8px"><b id="user_id"></b></h5>
+    @if (TestSpotifyUser != null)
+    {
+        <h5 class="w3-right" style="margin:8px"><b id="user_id">@TestSpotifyUser.DisplayName</b></h5>
+    }
 </div>
 <h1 class="w3-bar-item">Search</h1>
 <input @bind="PromptText" placeholder="Enter text here" style="width:400px" />
@@ -38,13 +41,35 @@
 <p>You entered: @ResponseText</p>
 
 <div>
-    <div class="w3-bar" id="spotifyPlaylistsDisplay"></div>
+    <div class="w3-bar" id="spotifyPlaylistsDisplay">
+        @if (TestListPlaylists != null)
+        {
+            foreach (PlaylistItem playlist in TestListPlaylists)
+            {
+                <div class="w3-card w3-bar-item w3-round-xlarge" @onclick="() => OpenPlaylist(playlist.Id, playlist.Name)" style="padding-top:16px;margin:8px;cursor:pointer">
+                    <img class="w3-round-large" style="width:200px;height:200px" src="@playlist.Images[0].Url" />
+                    <h5 style="text-align:right"><b>@playlist.ShortName</b></h5>
+                </div>
+            }
+        }
+    </div>
     <div id="spotifyPlaylistDisplay" style="display:none">
         <h1><b id="playlistName"></b></h1>
+        <div id="selectedPlaylist">
+            
+                @if (SelectedPlaylist != null)
+                {
+
+                    foreach(TrackItem track in SelectedPlaylist.Tracks.Items)
+                    {
+                        <p>@track.Track.Name</p>
+                    }
+
+                }
+            
+        </div>
     </div>
 </div>
-
-
 
 @code {
 
@@ -139,6 +164,7 @@
         public string Id { get; set; }
         public List<Image> Images { get; set; }
         public string Name { get; set; }
+        public string ShortName { get; set; }
         public SpotifyOwner Owner { get; set; }
         public Tracks Tracks { get; set; }
     }
@@ -154,10 +180,25 @@
     }
     public class Tracks
     {
+        public string Next { get; set; }
         public int Total { get; set; }
+        public List<TrackItem> Items = new List<TrackItem>();
+    }
+    public class TrackItem 
+    {
+        //public string Name { get; set; }
+        public FinalTrack Track = new FinalTrack();
+    }
+    public class FinalTrack
+    {
+        public string Name { get; set; }
     }
 
     public bool bFoundUser = false;
+
+    public AuthSpotifyUser? TestSpotifyUser { get; set; } = null;
+    public List<PlaylistItem>? TestListPlaylists { get; set; } = null;
+    public PlaylistItem? SelectedPlaylist { get; set; } = null;
 
     //Prevent loops on render
     private bool _hasInitialized = false;
@@ -181,13 +222,14 @@
 
                 if (!bFoundUser)
                 {
-                    string authSpotifyUser = await GetProfile();
-                    string spotifyPlaylist = await GetPlaylists();
+                    TestSpotifyUser = await GetProfile();
+                    TestListPlaylists = await GetPlaylists();
 
-                    if (authSpotifyUser != null)
+                    if (TestSpotifyUser != null)
                     {
                         bFoundUser = true;
-                        await JSRuntime.InvokeVoidAsync("spotifySetSearchDisplay", [authSpotifyUser, spotifyPlaylist]);
+                        //await JSRuntime.InvokeVoidAsync("spotifySetSearchDisplay", [authSpotifyUser, spotifyPlaylist]);
+                        StateHasChanged();
                     }
 
                 }
@@ -478,13 +520,14 @@
             Console.WriteLine("GetAccessToken Ex: " + ex.Message);
         }
     }
-    private async Task<string> GetProfile()
+    private async Task<AuthSpotifyUser> GetProfile()
     {
-        string spotifyUserResult = null;
+        //string spotifyUserResult = null;
+        AuthSpotifyUser authSpotifyUser = new AuthSpotifyUser();
 
         try
         {
-            AuthSpotifyUser authSpotifyUser = new AuthSpotifyUser();
+            //AuthSpotifyUser authSpotifyUser = new AuthSpotifyUser();
 
             if (string.IsNullOrEmpty(SpotifyAccessToken))
             {
@@ -504,18 +547,20 @@
             authSpotifyUser.SpotifyID = spotifyId;
 
             Console.WriteLine($"Name: {displayName}, ID: {spotifyId}");
-            spotifyUserResult = JsonConvert.SerializeObject(authSpotifyUser);
+            //spotifyUserResult = JsonConvert.SerializeObject(authSpotifyUser);
         }
         catch (Exception ex)
         {
             Console.WriteLine("GetProfile Ex: " + ex.Message);
         }
 
-        return spotifyUserResult;
+        return authSpotifyUser;
     }
-    private async Task<string> GetPlaylists() {
+    private async Task<List<PlaylistItem>> GetPlaylists()
+    {
 
-        string playlistsResult = null;
+        //string playlistsResult = null;
+        List<PlaylistItem> listPlaylistItems = new List<PlaylistItem>();
 
         if (string.IsNullOrEmpty(SpotifyAccessToken))
         {
@@ -524,7 +569,6 @@
 
         try
         {
-            List<PlaylistItem> listPlaylistItems = new List<PlaylistItem>();
 
             string pageUrl = "https://api.spotify.com/v1/me/playlists";
             bool bPagingComplete = false;
@@ -535,6 +579,12 @@
 
                 foreach (PlaylistItem playlist in spotifyPlaylists.Items)
                 {
+                    string shortName = playlist.Name;
+                    if (shortName.Length > 20)
+                    {
+                        shortName = SpotifyShortName(playlist.Name);
+                    }
+                    playlist.ShortName = shortName;
                     listPlaylistItems.Add(playlist);
                 }
 
@@ -548,7 +598,7 @@
                 }
             }
 
-            playlistsResult = JsonConvert.SerializeObject(listPlaylistItems);
+            //playlistsResult = JsonConvert.SerializeObject(listPlaylistItems);
         }
         catch (Exception ex)
         {
@@ -556,8 +606,23 @@
         }
 
         //string result = JsonConvert.SerializeObject(listPlaylistItems);
-        return playlistsResult;
+        return listPlaylistItems;
         //await JSRuntime.InvokeVoidAsync("spotifyDisplayPlaylists", result);
+    }
+    private string SpotifyShortName(string name)
+    {
+        string? shortName = null;
+
+        try 
+        {
+            shortName = name.Substring(0, 20) + "...";
+            Console.WriteLine("SpotifyShortName shortName: " + shortName);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("SpotifyShortName ex: " + ex.Message);
+        }
+        return shortName;
     }
     //Request next page
     public async Task<SpotifyPlaylists> GetSpotifyPlaylists(string accessToken, string pageUrl) {
@@ -589,13 +654,87 @@
             Console.WriteLine("RemoveToken Ex: " + ex.Message);
         }
     }
+    private async void OpenPlaylist(string id, string playlistName) 
+    {
+        Console.WriteLine("OpenPlaylist id: " + id);
+        await JSRuntime.InvokeVoidAsync("spotifyOpenPlaylist", playlistName);
+        SelectedPlaylist = await GetPlaylist(id);
+        StateHasChanged();
 
-    [JSInvokable]
-    public static Task TestTask()
+    }
+    private async Task<PlaylistItem> GetPlaylist(string playlistId)
     {
 
-        Console.WriteLine("TestTask Start!");
-        
-        return Task.CompletedTask;
+        PlaylistItem playlist = new PlaylistItem();
+
+        if (string.IsNullOrEmpty(SpotifyAccessToken))
+        {
+            await GetAccessToken();
+        }
+
+        try
+        {
+
+            string pageUrl = "https://api.spotify.com/v1/playlists/" + playlistId;
+            bool bPagingComplete = false;
+
+            // playlist = await GetSpotifyPlaylistsInformation(SpotifyAccessToken, pageUrl);
+
+            //while (!bPagingComplete)
+            //{
+                //PlaylistItem playlistNext = await GetSpotifyPlaylistsInformation(SpotifyAccessToken, pageUrl);
+                playlist = await GetSpotifyPlaylistsInformation(SpotifyAccessToken, pageUrl);
+
+                // if (getPlaylist.Tracks.Next != null)
+                // {
+                //     playlist.Tracks.Next = getPlaylist.Tracks.Next;
+                // }
+
+                // foreach (TrackItem track in getPlaylist.Tracks.Items)
+                // {
+                //     PlaylistItem playlistItem = new PlaylistItem();
+                //     playlistItem.Tracks.Items.Add(track);
+                //     //TrackItem finalTrack = new TrackItem();
+                //     //finalTrack.Track = track.Track;
+                //     //playlist.Tracks.Items.Add(track);
+                // }
+
+                // if (string.IsNullOrEmpty(getPlaylist.Tracks.Next))
+                // {
+                //     bPagingComplete = true;
+                // }
+                // else
+                // {
+                //     pageUrl = playlist.Tracks.Next;
+                // }
+           // }
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("GetPlaylist ex: " + ex.Message);
+        }
+        return playlist;
+
+    }
+
+    public async Task<PlaylistItem> GetSpotifyPlaylistsInformation(string accessToken, string pageUrl)
+    {
+
+        PlaylistItem spotifyPlaylist = new PlaylistItem();
+
+        try
+        {
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+            var response = await Http.GetAsync(pageUrl);
+            var content = await response.Content.ReadAsStringAsync();
+            spotifyPlaylist = JsonConvert.DeserializeObject<PlaylistItem>(content);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("GetSpotifyPlaylistsInformation ex: " + ex.Message);
+        }
+
+        return spotifyPlaylist;
     }
 }

@@ -54,13 +54,15 @@ function spotifyDisplayPlaylists(jsonListPlaylists) {
         spotifyPlaylistsDisplay.appendChild(elm_div);
     }
 }
-function spotifyOpenPlaylist(playlistId, playlistName) {
+function spotifyOpenPlaylist(playlistName) {
+    var selectedPlaylist = document.getElementById("selectedPlaylist");
+    selectedPlaylist.innerHTML = "";
+
     document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
     document.getElementById("spotifyPlaylistDisplay").style.display = "";
 
     document.getElementById("playlistName").innerText = playlistName;
 
-    testAsyncTask();
 }
 function testAsyncTask() {
     console.debug("testAsyncTask START!");
