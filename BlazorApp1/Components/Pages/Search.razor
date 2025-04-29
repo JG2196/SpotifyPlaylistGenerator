@@ -65,7 +65,7 @@
                         <li style="list-style-type:none">
                             <div class="w3-bar">
                                 <div class="w3-bar-item">
-                                    <h5>@track.Track.Name - @track.Track.Duration_ms</h5>
+                                    <h5>@track.Track.Name - @track.Track.TrackTime</h5>
                                     <h5 style="float:left;margin-top:0px">@track.Track.Artists[0].Name - @track.Track.Album.Name</h5>
                                 </div>
                                 <div class="w3-bar-item" style="float:right">
@@ -216,6 +216,7 @@
         public int Duration_ms { get; set; }
         public string Id { get; set; }
         public string Name { get; set; }
+        public string TrackTime { get; set; }
     }
     public class Album 
     {
@@ -225,6 +226,18 @@
     {
         public string Name { get; set; }
     }
+
+    // OpenAI Classes
+    public class OpenAIPlaylist {
+        public string Description { get; set; }
+        public List<OpenAISongs> Songs { get; set; }
+    }
+    public class OpenAISongs {
+        public string Title { get; set; }
+        public string Artist { get; set; }
+        public string Spotify_ID { get; set; }
+    }
+
     public bool bFoundUser = false;
 
     public AuthSpotifyUser? TestSpotifyUser { get; set; } = null;
@@ -745,6 +758,9 @@
                     {
                         foreach (TrackItem track in playlistResult.Tracks.Items)
                         {
+                            string time = GenTrackTime(track.Track.Duration_ms);
+                            Console.WriteLine(time);
+                            //convert ms to seconds
                             playlist.Tracks.Items.Add(track);
                         }
                     }
@@ -757,14 +773,20 @@
                 {
                     generatedUrl = playlist.Tracks.Next;
                 }
-           }
+            }
+
+            foreach (TrackItem selectedTrack in playlist.Tracks.Items)
+            {
+                selectedTrack.Track.TrackTime = GenTrackTime(selectedTrack.Track.Duration_ms);
+                //Console.WriteLine($"Track: {selectedTrack.Track.Name}, Duration: {selectedTrack.Track.TrackTime}");
+            }
 
         }
         catch (Exception ex)
         {
             Console.WriteLine("GetPlaylist ex: " + ex.Message);
         }
-        
+
         return playlist;
     }
 
@@ -805,5 +827,13 @@
         }
 
         return trackItem;
+    }
+    private string GenTrackTime(int ms) {
+        TimeSpan t = TimeSpan.FromMilliseconds(ms);
+
+        string time = $"{t.Minutes}:{t.Seconds}";
+
+        return time;
+
     }
 }
