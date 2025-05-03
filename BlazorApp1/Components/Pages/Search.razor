@@ -9,6 +9,7 @@
 @using System.Text;
 @using Newtonsoft.Json.Linq;
 @using OpenAI;
+@using System.Text.RegularExpressions;
 
 @inject NavigationManager NavigationManager
 @inject HttpClient Http;
@@ -229,13 +230,24 @@
 
     // OpenAI Classes
     public class OpenAIPlaylist {
-        public string Description { get; set; }
-        public List<OpenAISongs> Songs { get; set; }
+        //public string Description { get; set; }
+        //public List<OpenAISongs> Songs { get; set; }
+        public List<OpenAITrack> Playlist { get; set; }
     }
     public class OpenAISongs {
         public string Title { get; set; }
         public string Artist { get; set; }
         public string Spotify_ID { get; set; }
+    }
+
+    public class OpenAITrack {
+        public string Title { get; set; }
+
+        //[JsonProperty("artist")]
+        public string Artist { get; set; }
+
+        //[JsonProperty("spotify_id")]
+        public string Spotify_Id { get; set; }
     }
 
     public bool bFoundUser = false;
@@ -310,163 +322,257 @@
 
         return spotifyCode;
     }
+    // First attempt
+    // private async void GetAssistant()
+    // {
+    //     string apiKey = _Configuration["OpenAI:APIKey"]; // Get the API Key from Open AI Account
+    //     string assistant_id = _Configuration["OpenAI:AssistantId"]; // Get the assistant id from Open AI Account under "Assistants" menu.
+
+    //     string assitantsAPIURL = "https://api.openai.com/v1/assistants/" + assistant_id; // Returns list of all assistants
+    //     var threadAPIUrl = "https://api.openai.com/v1/threads"; // Returns list of all assistants
+    //     var runAPIUrl = "https://api.openai.com/v1/threads/runs";
+    //     string assistantVersion = "assistants=v2";
+
+    //     //#pragma warning disable OPENAI001
+    //     AIAssistant assistant = new AIAssistant();
+
+    //     try
+    //     {
+    //         using (HttpClient client = new HttpClient())
+    //         {
+
+    //             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+    //             client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
+    //             HttpResponseMessage response = await client.GetAsync(assitantsAPIURL);
+    //             string responseContent = await response.Content.ReadAsStringAsync();
+
+    //             assistant = JsonConvert.DeserializeObject<AIAssistant>(responseContent);
+
+    //             Console.WriteLine($"GetAssistant Name: {assistant.Name}, ID: {assistant.ID}, Object: {assistant.Object}, Model: {assistant.Model}");
+
+    //             if (assistant == null)
+    //             {
+    //                 throw new Exception("GetAssistant: Invalid assistants");
+    //             }
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Console.WriteLine("GetAssistant Ex: " + ex.Message);
+    //     }
+
+    //     /////////
+    //     ///// Step 2 : Create a new thread object and attach message
+
+    //     var requestData = new
+    //     {
+    //         messages = new[]
+    //        {
+    //                 new { role = "user", content = "Im in the mood for something upbeat and jazzy, I like artists like JUNGLE and Ezra Collective. Json." }
+    //             }
+    //     };
+    //     string jsonPayload = JsonConvert.SerializeObject(requestData);
+    //     string threadId = string.Empty;
+    //     using (HttpClient client = new HttpClient())
+    //     {
+    //         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+    //         client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
+    //         HttpResponseMessage response = await client.PostAsync(threadAPIUrl,
+    //             new StringContent(jsonPayload, Encoding.UTF8, "application/json"));
+    //         response.EnsureSuccessStatusCode();
+
+    //         string responseBody = await response.Content.ReadAsStringAsync();
+    //         var threadList = JsonConvert.DeserializeObject<Thread>(responseBody);
+
+    //         if (response.IsSuccessStatusCode)
+    //         {
+    //             threadId = threadList.Id;
+    //         }
+
+    //         Console.WriteLine(responseBody);
+    //     }
+
+    //     // Step 3 : Create a new Run object
+
+    //     string runId = string.Empty;
+    //     // Create the JSON payload
+
+    //     // var payload = new
+    //     // {
+    //     //     thread_id = threadId,
+    //     //     assistant_id = assistant.ID,
+    //     //     //instructions = "Respond in JSON format.",
+    //     //     response_format = "json_object"  // 👈 This forces a JSON response
+    //     // };
+    //     var payload = new
+    //     {
+    //         //thread_id = threadId,
+    //         assistant_id = assistant.ID,
+    //         //response_format = "json_object"
+    //     };
+
+    //     try{
+    //         using (HttpClient client = new HttpClient())
+    //         {
+    //             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+    //             client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
+    //             string jsonPayload1 = JsonConvert.SerializeObject(payload);
+
+    //             HttpResponseMessage response = await client.PostAsync("https://api.openai.com/v1/threads/" + threadId + "/runs",
+    //                                                                new StringContent(jsonPayload1, Encoding.UTF8, "application/json"));
+    //             response.EnsureSuccessStatusCode();
+    //             string runResponse = await response.Content.ReadAsStringAsync();
+    //             var runList = JsonConvert.DeserializeObject<Run>(runResponse);
+
+    //             if (response.IsSuccessStatusCode)
+    //             {
+    //                 runId = runList.Id;
+    //             }
+
+    //         }
+    //     }
+    //     catch (Exception ex){
+    //         Console.WriteLine("response Ex: " + ex.Message);
+    //     }
+
+    //     // Step 4 Retrieve Run object and check the run status
+
+    //     using (HttpClient client = new HttpClient())
+    //     {
+    //         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+    //         client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
+    //         HttpResponseMessage response = await client.GetAsync("https://api.openai.com/v1/threads/" + threadId + "/runs/" + runId);
+    //         response.EnsureSuccessStatusCode();
+    //         if (response.IsSuccessStatusCode)
+    //         {
+
+    //             // STEP 5 : Display Assistant Response
+
+    //             using (HttpClient clientMessage = new())
+    //             {
+    //                 clientMessage.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+    //                 clientMessage.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
+    //                 HttpResponseMessage responseMessage = await clientMessage.GetAsync("https://api.openai.com/v1/threads/" + threadId + "/messages");
+    //                 responseMessage.EnsureSuccessStatusCode();
+    //                 if (responseMessage.IsSuccessStatusCode)
+    //                 {
+    //                     string runResponse = await responseMessage.Content.ReadAsStringAsync();
+
+    //                     JObject jsonObject = JObject.Parse(runResponse);
+    //                     //Console.WriteLine("Valid JSON object received.");
+    //                     //Console.WriteLine("Valid JSON object received: " + jsonObject);
+    //                     //jsonObject.Root;
+
+    //                     var messages = jsonObject["data"];
+
+    //                     Data rootObject = JsonConvert.DeserializeObject<Data>(runResponse);
+    //                     // foreach (var data in rootObject.songs)
+    //                     // {
+    //                     //     Console.WriteLine($"ID: {data.Title}, Role: {data.Artist}");
+    //                     //     // foreach (var content in data.Content)
+    //                     //     // {
+    //                     //     //     // Print response from the API
+    //                     //     //     Console.WriteLine($"Content Type: {content.Type}, Value: {content.Text.Value}");
+
+    //                     //     // }
+    //                     // }
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+
     private async void GetAssistant()
     {
+
+        //         {
+
+        //             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+        //             client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
+        //             HttpResponseMessage response = await client.GetAsync(assitantsAPIURL);
+        //             string responseContent = await response.Content.ReadAsStringAsync();
+
+        //             assistant = JsonConvert.DeserializeObject<AIAssistant>(responseContent);
+
+        //             Console.WriteLine($"GetAssistant Name: {assistant.Name}, ID: {assistant.ID}, Object: {assistant.Object}, Model: {assistant.Model}");
+
+        //             if (assistant == null)
+        //             {
+        //                 throw new Exception("GetAssistant: Invalid assistants");
+        //             }
+        //         }
+
+        string endpoint = "https://api.openai.com/v1/chat/completions";
         string apiKey = _Configuration["OpenAI:APIKey"]; // Get the API Key from Open AI Account
-        string assistant_id = _Configuration["OpenAI:AssistantId"]; // Get the assistant id from Open AI Account under "Assistants" menu.
 
-        string assitantsAPIURL = "https://api.openai.com/v1/assistants/" + assistant_id; // Returns list of all assistants
-        var threadAPIUrl = "https://api.openai.com/v1/threads"; // Returns list of all assistants
-        var runAPIUrl = "https://api.openai.com/v1/threads/runs";
-        string assistantVersion = "assistants=v2";
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
 
-        //#pragma warning disable OPENAI001
-        AIAssistant assistant = new AIAssistant();
+        string systemContent = "Create a playlist that aligns with the user's needs based on their input. The assistant should be friendly with a laid-back, 80's music connoisseur vibe. "
+        + "Understand the user's preferences, such as genre, mood, occasion, and any specific artists or songs mentioned. Use this information to curate a list of songs that best match their requirements. Generate a playlist in JSON format with 'title', 'artist', and 'spotify_id' fields."
+        + "# Steps"
+        + "1. **Extract Preferences**: Identify key elements from the user's input, such as preferred genres, mood, occasion, tone, and any specific artists or songs."
+        + "2. **Curate Playlist**: Use the extracted preferences to select a range of songs that align with the user's needs."
+        + "3. **Ensure Diversity**: Include a variety of songs within the specified genre or mood to maintain the playlist's interest."
+        + "# Output Format"
+        + "Provide the playlist as a numbered list of song titles along with their respective artists, there should also be a short description of the playlist for the user. Each entry should be formatted as: 'Song Title - Artist Name - Spotify ID'."
+        + "# Examples"
+        + "**User Input**: 'I need a relaxing playlist for studying, with some jazz and acoustic tracks.'"
+        + "**Playlist Output**:"
+        + "1. 'Autumn Leaves - Chet Baker'"
+        + "2. 'Norwegian Wood - The Beatles'"
+        + "3. 'Take Five - Dave Brubeck'"
+        + "4. 'Blackbird - The Beatles'"
+        + "(Actual playlists created should include a minimum of 20 songs to ensure sufficient variety, and a maximum of 25 songs.)"
+        + "# Notes"
+        + "- Ensure the playlist is tailored as closely as possible to the provided preferences."
+        + "- Handle vague or broad inputs by providing a balanced playlist across suggested elements."
+        + "- Consider mentioning popular or critically acclaimed tracks within the specified genres."
+        + "- If the user's request is unsuccessful, politely ask them to build on their request.";
 
-        try
+        var requestBody = new
         {
-            using (HttpClient client = new HttpClient())
-            {
-
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-                client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
-                HttpResponseMessage response = await client.GetAsync(assitantsAPIURL);
-                string responseContent = await response.Content.ReadAsStringAsync();
-
-                assistant = JsonConvert.DeserializeObject<AIAssistant>(responseContent);
-
-                Console.WriteLine($"GetAssistant Name: {assistant.Name}, ID: {assistant.ID}, Object: {assistant.Object}, Model: {assistant.Model}");
-
-                if (assistant == null)
-                {
-                    throw new Exception("GetAssistant: Invalid assistants");
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("GetAssistant Ex: " + ex.Message);
-        }
-
-        /////////
-        ///// Step 2 : Create a new thread object and attach message
-
-        var requestData = new
-        {
+            model = "gpt-4o-mini",  // or "gpt-3.5-turbo"
             messages = new[]
-           {
-                    new { role = "user", content = "Im in the mood for something upbeat and jazzy, I like artists like JUNGLE and Ezra Collective. Json." }
-                }
-        };
-        string jsonPayload = JsonConvert.SerializeObject(requestData);
-        string threadId = string.Empty;
-        using (HttpClient client = new HttpClient())
-        {
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-            client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
-            HttpResponseMessage response = await client.PostAsync(threadAPIUrl,
-                new StringContent(jsonPayload, Encoding.UTF8, "application/json"));
-            response.EnsureSuccessStatusCode();
-
-            string responseBody = await response.Content.ReadAsStringAsync();
-            var threadList = JsonConvert.DeserializeObject<Thread>(responseBody);
-
-            if (response.IsSuccessStatusCode)
             {
-                threadId = threadList.Id;
+                new { role = "system", content = systemContent },
+                new { role = "user", content = "Im in the mood for something upbeat and jazzy, I like artists like JUNGLE and Ezra Collective. Json." }
             }
-
-            Console.WriteLine(responseBody);
-        }
-
-        // Step 3 : Create a new Run object
-
-        string runId = string.Empty;
-        // Create the JSON payload
-
-        // var payload = new
-        // {
-        //     thread_id = threadId,
-        //     assistant_id = assistant.ID,
-        //     //instructions = "Respond in JSON format.",
-        //     response_format = "json_object"  // 👈 This forces a JSON response
-        // };
-        var payload = new
-        {
-            //thread_id = threadId,
-            assistant_id = assistant.ID,
-            //response_format = "json_object"
         };
 
-        try{
-            using (HttpClient client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-                client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
-                string jsonPayload1 = JsonConvert.SerializeObject(payload);
+        var content = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
 
-                HttpResponseMessage response = await client.PostAsync("https://api.openai.com/v1/threads/" + threadId + "/runs",
-                                                                   new StringContent(jsonPayload1, Encoding.UTF8, "application/json"));
-                response.EnsureSuccessStatusCode();
-                string runResponse = await response.Content.ReadAsStringAsync();
-                var runList = JsonConvert.DeserializeObject<Run>(runResponse);
+        var response = await client.PostAsync(endpoint, content);
+        var responseString = await response.Content.ReadAsStringAsync();
 
-                if (response.IsSuccessStatusCode)
-                {
-                    runId = runList.Id;
-                }
+        dynamic result = JsonConvert.DeserializeObject(responseString);
 
-            }
-        }
-        catch (Exception ex){
-            Console.WriteLine("response Ex: " + ex.Message);
-        }
-
-        // Step 4 Retrieve Run object and check the run status
-
-        using (HttpClient client = new HttpClient())
+        //OpenAIPlaylist playlist = result.choices[0].message.content;
+        string resultString = ExtractJsonFromResponse(result.choices[0].message.content.ToString());
+        Console.WriteLine($"resultString: {resultString}");
+        OpenAIPlaylist playlist = JsonConvert.DeserializeObject<OpenAIPlaylist>(resultString);
+        Console.WriteLine($"GetAssisstant END! {result.choices[0].message.content}");
+        Console.WriteLine($"GetAssisstant END!");
+        //result.choices[0].message.content;
+    }
+    public static string ExtractJsonFromResponse(string response)
+    {
+        // Try to find a JSON block inside triple backticks (```json ... ```)
+        var match = Regex.Match(response, @"```(?:json)?\s*(\{.*?\})\s*```", RegexOptions.Singleline);
+        if (match.Success)
         {
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-            client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
-            HttpResponseMessage response = await client.GetAsync("https://api.openai.com/v1/threads/" + threadId + "/runs/" + runId);
-            response.EnsureSuccessStatusCode();
-            if (response.IsSuccessStatusCode)
-            {
-
-                // STEP 5 : Display Assistant Response
-
-                using (HttpClient clientMessage = new())
-                {
-                    clientMessage.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-                    clientMessage.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
-                    HttpResponseMessage responseMessage = await clientMessage.GetAsync("https://api.openai.com/v1/threads/" + threadId + "/messages");
-                    responseMessage.EnsureSuccessStatusCode();
-                    if (responseMessage.IsSuccessStatusCode)
-                    {
-                        string runResponse = await responseMessage.Content.ReadAsStringAsync();
-
-                        JObject jsonObject = JObject.Parse(runResponse);
-                        //Console.WriteLine("Valid JSON object received.");
-                        //Console.WriteLine("Valid JSON object received: " + jsonObject);
-                        //jsonObject.Root;
-
-                        var messages = jsonObject["data"];
-
-                        Data rootObject = JsonConvert.DeserializeObject<Data>(runResponse);
-                        // foreach (var data in rootObject.songs)
-                        // {
-                        //     Console.WriteLine($"ID: {data.Title}, Role: {data.Artist}");
-                        //     // foreach (var content in data.Content)
-                        //     // {
-                        //     //     // Print response from the API
-                        //     //     Console.WriteLine($"Content Type: {content.Type}, Value: {content.Text.Value}");
-
-                        //     // }
-                        // }
-                    }
-                }
-            }
+            return match.Groups[1].Value;
         }
+
+        // Fallback: Try to match any JSON object in the string
+        match = Regex.Match(response, @"(\{.*\})", RegexOptions.Singleline);
+        if (match.Success)
+        {
+            return match.Groups[1].Value;
+        }
+
+        // If no match is found, return original string (may cause deserialize errors)
+        return response;
     }
     private async void SubmitPrompt()
     {
