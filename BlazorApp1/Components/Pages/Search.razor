@@ -37,7 +37,7 @@
 <h1 class="w3-bar-item">Search</h1>
 <input @bind="PromptText" placeholder="Enter text here" style="width:400px" />
 
-<button @onclick="SubmitPrompt">Submit</button>
+<button>Submit</button>
 <button @onclick="GetAssistant">Assistant</button>
 <p>You entered: @ResponseText</p>
 
@@ -87,70 +87,15 @@
                 @* </div> *@
             }
         </div>
-
-        @* </div> *@
+    </div>
+    <div id="ai_GeneratedPlaylist" style="display:none">
+        <h3 id="ai_PlaylistDescription"></h3>
+        <ol id="ai_ListPlaylistTracks">
+        </ol>
     </div>
 </div>
 
 @code {
-
-    public class AIAssistant {
-        public string Name = string.Empty;
-        public string ID = string.Empty;
-        public string Object = string.Empty;
-        public string Model = string.Empty;
-    }
-    public class Run
-    {
-        public string Id { get; set; }
-    }
-    public class Thread
-    {
-        public string Id { get; set; }
-    }
-    public class ThreadList
-    {
-        public List<Thread> Data { get; set; }
-    }
-    public class RootObject
-    {
-        public string Object { get; set; }
-        public List<Data> Data { get; set; }
-        public string FirstId { get; set; }
-        public string LastId { get; set; }
-        public bool HasMore { get; set; }
-    }
-    public class Song {
-        public string Title { get; set; }
-        public string Artist { get; set; }
-        public string Spotify_Id { get; set; }
-    }
-    public class Data
-    {
-        public string Id { get; set; }
-        public string ThreadId { get; set; }
-        public string Role { get; set; }
-        public List<Content> Content { get; set; }
-        public string AssistantId { get; set; }
-        public string RunId { get; set; }
-    }
-    public class Content
-    {
-        public string Text { get; set; }
-        public Value Value { get; set; }
-    }
-    public class Value {
-        List<Playlist> listPlaylist;
-    }
-    public class Playlist {
-        public string Title { get; set; }
-        public string Artist { get; set; }
-    }
-    public class Text
-    {
-        public string Value { get; set; }
-        public List<object> Annotations { get; set; }
-    }
     private string PromptText { get; set; } = "";
     private string ResponseText { get; set; } = "";
     private string? AuthAccessToken = null;
@@ -158,14 +103,37 @@
     private string SpotifyAccessToken = string.Empty;
     private string userMessage = "";
     private string responseMessage = "";
-    public class Playlist2 {
-        List<Track> Playlist = new List<Track>();
-    }
-    // public class Track {
-    //     public string track_name { get; set; }
-    //     public string track_artist { get; set; }
-    //     public string spotify_id { get; set; }
-    // }
+    private string AssistantContent = "Create a playlist that aligns with the user's needs based on their input. The assistant should be friendly with a laid-back, 80's music connoisseur vibe. "
+        + "Understand the user's preferences, such as genre, mood, occasion, and any specific artists or songs mentioned. Use this information to curate a list of songs that best match their requirements. Generate a playlist in JSON format with 'title', 'artist', and 'spotify_id' fields."
+        + "Add the playlist description 'description' to the JSON"
+        + "JSON format"
+        + "{'description': 'abc',"
+        + "'playlist': ["
+        + "{"
+        + "'title': 'abc',"
+        + "'artist': 'abc',"
+        +"'spotify_id': 'abc'"
+        + "}, ]"
+        + "}"
+        + "# Steps"
+        + "1. **Extract Preferences**: Identify key elements from the user's input, such as preferred genres, mood, occasion, tone, and any specific artists or songs."
+        + "2. **Curate Playlist**: Use the extracted preferences to select a range of songs that align with the user's needs."
+        + "3. **Ensure Diversity**: Include a variety of songs within the specified genre or mood to maintain the playlist's interest."
+        + "# Output Format"
+        + "Provide the playlist as a numbered list of song titles along with their respective artists, there should also be a short description of the playlist for the user. Each entry should be formatted as: 'Song Title - Artist Name - Spotify ID'."
+        + "# Examples"
+        + "**User Input**: 'I need a relaxing playlist for studying, with some jazz and acoustic tracks.'"
+        + "**Playlist Output**:"
+        + "1. 'Autumn Leaves - Chet Baker'"
+        + "2. 'Norwegian Wood - The Beatles'"
+        + "3. 'Take Five - Dave Brubeck'"
+        + "4. 'Blackbird - The Beatles'"
+        + "(Actual playlists created should include a minimum of 20 songs to ensure sufficient variety, and a maximum of 25 songs.)"
+        + "# Notes"
+        + "- Ensure the playlist is tailored as closely as possible to the provided preferences."
+        + "- Handle vague or broad inputs by providing a balanced playlist across suggested elements."
+        + "- Consider mentioning popular or critically acclaimed tracks within the specified genres."
+        + "- If the user's request is unsuccessful, politely ask them to build on their request.";
 
     public class AuthSpotifyUser
     {
@@ -230,23 +198,13 @@
 
     // OpenAI Classes
     public class OpenAIPlaylist {
-        //public string Description { get; set; }
-        //public List<OpenAISongs> Songs { get; set; }
+        public string Description { get; set; }
         public List<OpenAITrack> Playlist { get; set; }
-    }
-    public class OpenAISongs {
-        public string Title { get; set; }
-        public string Artist { get; set; }
-        public string Spotify_ID { get; set; }
     }
 
     public class OpenAITrack {
         public string Title { get; set; }
-
-        //[JsonProperty("artist")]
         public string Artist { get; set; }
-
-        //[JsonProperty("spotify_id")]
         public string Spotify_Id { get; set; }
     }
 
@@ -322,238 +280,52 @@
 
         return spotifyCode;
     }
-    // First attempt
-    // private async void GetAssistant()
-    // {
-    //     string apiKey = _Configuration["OpenAI:APIKey"]; // Get the API Key from Open AI Account
-    //     string assistant_id = _Configuration["OpenAI:AssistantId"]; // Get the assistant id from Open AI Account under "Assistants" menu.
-
-    //     string assitantsAPIURL = "https://api.openai.com/v1/assistants/" + assistant_id; // Returns list of all assistants
-    //     var threadAPIUrl = "https://api.openai.com/v1/threads"; // Returns list of all assistants
-    //     var runAPIUrl = "https://api.openai.com/v1/threads/runs";
-    //     string assistantVersion = "assistants=v2";
-
-    //     //#pragma warning disable OPENAI001
-    //     AIAssistant assistant = new AIAssistant();
-
-    //     try
-    //     {
-    //         using (HttpClient client = new HttpClient())
-    //         {
-
-    //             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-    //             client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
-    //             HttpResponseMessage response = await client.GetAsync(assitantsAPIURL);
-    //             string responseContent = await response.Content.ReadAsStringAsync();
-
-    //             assistant = JsonConvert.DeserializeObject<AIAssistant>(responseContent);
-
-    //             Console.WriteLine($"GetAssistant Name: {assistant.Name}, ID: {assistant.ID}, Object: {assistant.Object}, Model: {assistant.Model}");
-
-    //             if (assistant == null)
-    //             {
-    //                 throw new Exception("GetAssistant: Invalid assistants");
-    //             }
-    //         }
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         Console.WriteLine("GetAssistant Ex: " + ex.Message);
-    //     }
-
-    //     /////////
-    //     ///// Step 2 : Create a new thread object and attach message
-
-    //     var requestData = new
-    //     {
-    //         messages = new[]
-    //        {
-    //                 new { role = "user", content = "Im in the mood for something upbeat and jazzy, I like artists like JUNGLE and Ezra Collective. Json." }
-    //             }
-    //     };
-    //     string jsonPayload = JsonConvert.SerializeObject(requestData);
-    //     string threadId = string.Empty;
-    //     using (HttpClient client = new HttpClient())
-    //     {
-    //         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-    //         client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
-    //         HttpResponseMessage response = await client.PostAsync(threadAPIUrl,
-    //             new StringContent(jsonPayload, Encoding.UTF8, "application/json"));
-    //         response.EnsureSuccessStatusCode();
-
-    //         string responseBody = await response.Content.ReadAsStringAsync();
-    //         var threadList = JsonConvert.DeserializeObject<Thread>(responseBody);
-
-    //         if (response.IsSuccessStatusCode)
-    //         {
-    //             threadId = threadList.Id;
-    //         }
-
-    //         Console.WriteLine(responseBody);
-    //     }
-
-    //     // Step 3 : Create a new Run object
-
-    //     string runId = string.Empty;
-    //     // Create the JSON payload
-
-    //     // var payload = new
-    //     // {
-    //     //     thread_id = threadId,
-    //     //     assistant_id = assistant.ID,
-    //     //     //instructions = "Respond in JSON format.",
-    //     //     response_format = "json_object"  // 👈 This forces a JSON response
-    //     // };
-    //     var payload = new
-    //     {
-    //         //thread_id = threadId,
-    //         assistant_id = assistant.ID,
-    //         //response_format = "json_object"
-    //     };
-
-    //     try{
-    //         using (HttpClient client = new HttpClient())
-    //         {
-    //             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-    //             client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
-    //             string jsonPayload1 = JsonConvert.SerializeObject(payload);
-
-    //             HttpResponseMessage response = await client.PostAsync("https://api.openai.com/v1/threads/" + threadId + "/runs",
-    //                                                                new StringContent(jsonPayload1, Encoding.UTF8, "application/json"));
-    //             response.EnsureSuccessStatusCode();
-    //             string runResponse = await response.Content.ReadAsStringAsync();
-    //             var runList = JsonConvert.DeserializeObject<Run>(runResponse);
-
-    //             if (response.IsSuccessStatusCode)
-    //             {
-    //                 runId = runList.Id;
-    //             }
-
-    //         }
-    //     }
-    //     catch (Exception ex){
-    //         Console.WriteLine("response Ex: " + ex.Message);
-    //     }
-
-    //     // Step 4 Retrieve Run object and check the run status
-
-    //     using (HttpClient client = new HttpClient())
-    //     {
-    //         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-    //         client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
-    //         HttpResponseMessage response = await client.GetAsync("https://api.openai.com/v1/threads/" + threadId + "/runs/" + runId);
-    //         response.EnsureSuccessStatusCode();
-    //         if (response.IsSuccessStatusCode)
-    //         {
-
-    //             // STEP 5 : Display Assistant Response
-
-    //             using (HttpClient clientMessage = new())
-    //             {
-    //                 clientMessage.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-    //                 clientMessage.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
-    //                 HttpResponseMessage responseMessage = await clientMessage.GetAsync("https://api.openai.com/v1/threads/" + threadId + "/messages");
-    //                 responseMessage.EnsureSuccessStatusCode();
-    //                 if (responseMessage.IsSuccessStatusCode)
-    //                 {
-    //                     string runResponse = await responseMessage.Content.ReadAsStringAsync();
-
-    //                     JObject jsonObject = JObject.Parse(runResponse);
-    //                     //Console.WriteLine("Valid JSON object received.");
-    //                     //Console.WriteLine("Valid JSON object received: " + jsonObject);
-    //                     //jsonObject.Root;
-
-    //                     var messages = jsonObject["data"];
-
-    //                     Data rootObject = JsonConvert.DeserializeObject<Data>(runResponse);
-    //                     // foreach (var data in rootObject.songs)
-    //                     // {
-    //                     //     Console.WriteLine($"ID: {data.Title}, Role: {data.Artist}");
-    //                     //     // foreach (var content in data.Content)
-    //                     //     // {
-    //                     //     //     // Print response from the API
-    //                     //     //     Console.WriteLine($"Content Type: {content.Type}, Value: {content.Text.Value}");
-
-    //                     //     // }
-    //                     // }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
 
     private async void GetAssistant()
     {
-
-        //         {
-
-        //             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-        //             client.DefaultRequestHeaders.Add("OpenAI-Beta", $"{assistantVersion}");
-        //             HttpResponseMessage response = await client.GetAsync(assitantsAPIURL);
-        //             string responseContent = await response.Content.ReadAsStringAsync();
-
-        //             assistant = JsonConvert.DeserializeObject<AIAssistant>(responseContent);
-
-        //             Console.WriteLine($"GetAssistant Name: {assistant.Name}, ID: {assistant.ID}, Object: {assistant.Object}, Model: {assistant.Model}");
-
-        //             if (assistant == null)
-        //             {
-        //                 throw new Exception("GetAssistant: Invalid assistants");
-        //             }
-        //         }
-
-        string endpoint = "https://api.openai.com/v1/chat/completions";
-        string apiKey = _Configuration["OpenAI:APIKey"]; // Get the API Key from Open AI Account
-
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-
-        string systemContent = "Create a playlist that aligns with the user's needs based on their input. The assistant should be friendly with a laid-back, 80's music connoisseur vibe. "
-        + "Understand the user's preferences, such as genre, mood, occasion, and any specific artists or songs mentioned. Use this information to curate a list of songs that best match their requirements. Generate a playlist in JSON format with 'title', 'artist', and 'spotify_id' fields."
-        + "# Steps"
-        + "1. **Extract Preferences**: Identify key elements from the user's input, such as preferred genres, mood, occasion, tone, and any specific artists or songs."
-        + "2. **Curate Playlist**: Use the extracted preferences to select a range of songs that align with the user's needs."
-        + "3. **Ensure Diversity**: Include a variety of songs within the specified genre or mood to maintain the playlist's interest."
-        + "# Output Format"
-        + "Provide the playlist as a numbered list of song titles along with their respective artists, there should also be a short description of the playlist for the user. Each entry should be formatted as: 'Song Title - Artist Name - Spotify ID'."
-        + "# Examples"
-        + "**User Input**: 'I need a relaxing playlist for studying, with some jazz and acoustic tracks.'"
-        + "**Playlist Output**:"
-        + "1. 'Autumn Leaves - Chet Baker'"
-        + "2. 'Norwegian Wood - The Beatles'"
-        + "3. 'Take Five - Dave Brubeck'"
-        + "4. 'Blackbird - The Beatles'"
-        + "(Actual playlists created should include a minimum of 20 songs to ensure sufficient variety, and a maximum of 25 songs.)"
-        + "# Notes"
-        + "- Ensure the playlist is tailored as closely as possible to the provided preferences."
-        + "- Handle vague or broad inputs by providing a balanced playlist across suggested elements."
-        + "- Consider mentioning popular or critically acclaimed tracks within the specified genres."
-        + "- If the user's request is unsuccessful, politely ask them to build on their request.";
-
-        var requestBody = new
+        try
         {
-            model = "gpt-4o-mini",  // or "gpt-3.5-turbo"
-            messages = new[]
+            //Console.WriteLine(PromptText);
+            string endpoint = "https://api.openai.com/v1/chat/completions";
+            string apiKey = _Configuration["OpenAI:APIKey"]; // Get the API Key from Open AI Account
+
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+
+            var requestBody = new
             {
-                new { role = "system", content = systemContent },
-                new { role = "user", content = "Im in the mood for something upbeat and jazzy, I like artists like JUNGLE and Ezra Collective. Json." }
+                model = "gpt-4o-mini",  // or "gpt-3.5-turbo"
+                messages = new[]
+                {
+                new { role = "system", content = AssistantContent },
+                new { role = "user", content = PromptText }
             }
-        };
+            };
 
-        var content = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
+            var content = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
 
-        var response = await client.PostAsync(endpoint, content);
-        var responseString = await response.Content.ReadAsStringAsync();
+            var response = await client.PostAsync(endpoint, content);
+            var responseString = await response.Content.ReadAsStringAsync();
 
-        dynamic result = JsonConvert.DeserializeObject(responseString);
+            dynamic result = JsonConvert.DeserializeObject(responseString);
 
-        //OpenAIPlaylist playlist = result.choices[0].message.content;
-        string resultString = ExtractJsonFromResponse(result.choices[0].message.content.ToString());
-        Console.WriteLine($"resultString: {resultString}");
-        OpenAIPlaylist playlist = JsonConvert.DeserializeObject<OpenAIPlaylist>(resultString);
-        Console.WriteLine($"GetAssisstant END! {result.choices[0].message.content}");
-        Console.WriteLine($"GetAssisstant END!");
-        //result.choices[0].message.content;
+            string resultString = ExtractJsonFromResponse(result.choices[0].message.content.ToString());
+            OpenAIPlaylist playlist = JsonConvert.DeserializeObject<OpenAIPlaylist>(resultString);
+
+            Console.WriteLine("GetAssistant description: " + playlist.Description);
+            foreach (OpenAITrack track in playlist.Playlist)
+            {
+                Console.WriteLine($"GetAssistant track: Title - {track.Title}, Artist - {track.Artist}, SpotifyID - {track.Spotify_Id}");
+            }
+
+            string finalResult = JsonConvert.SerializeObject(playlist);
+            JSRuntime.InvokeVoidAsync("spotifyProcessChatResponse", finalResult);
+        } 
+        catch (Exception ex) 
+        {
+            Console.WriteLine("GetAssistant ex: " + ex.Message);
+        }
+
     }
     public static string ExtractJsonFromResponse(string response)
     {
@@ -573,41 +345,6 @@
 
         // If no match is found, return original string (may cause deserialize errors)
         return response;
-    }
-    private async void SubmitPrompt()
-    {
-        try
-        {
-            string input = "```json";
-            string input2 = "```";
-
-
-            OpenAIServices openAIServices = new OpenAIServices();
-
-            ChatClient chatClientService = openAIServices.OpenAIClientService(_Configuration);
-
-            ChatCompletion completion = chatClientService.CompleteChat(PromptText);
-
-            ResponseText = completion.Content[0].Text;
-
-            string result = ResponseText.Replace(input, "");
-            string result2 = result.Replace(input2, "");
-
-            Playlist2 playlist2 = new Playlist2(); 
-
-            playlist2 = JsonConvert.DeserializeObject<Playlist2>(result2);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("SubmitPrompt Ex: " + ex.Message);
-        }
-    }
-    private async void SubmitPrompt2() {
-
-        var apiKey = "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";
-
-
-
     }
     private void AuthorizeSpotify()
     {

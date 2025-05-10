@@ -79,3 +79,29 @@ function spotifyAlterString(str) {
 
     return str;
 }
+function spotifyProcessChatResponse(jsonData) {
+
+    var aiGeneratedPlaylist = document.getElementById("ai_GeneratedPlaylist");
+    var aiListPlaylistTracks = document.getElementById("ai_ListPlaylistTracks");
+
+    let obj = JSON.parse(jsonData);
+
+    document.getElementById("ai_PlaylistDescription").innerText = obj.Description;
+
+    for (var index in obj.Playlist) {
+
+        var elm_Li = document.createElement("li");
+
+        elm_Li.setAttribute("spotify_id", obj.Playlist[index].Spotify_Id);
+        elm_Li.style.listStyleType = "none";
+
+        elm_Li.innerText = `${obj.Playlist[index].Title} - ${obj.Playlist[index].Artist}`;
+
+        aiListPlaylistTracks.appendChild(elm_Li);
+    }
+
+    aiGeneratedPlaylist.style.display = "";
+    document.getElementById("spotifyPlaylistDisplay").style.display = "none";
+    document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
+
+}
