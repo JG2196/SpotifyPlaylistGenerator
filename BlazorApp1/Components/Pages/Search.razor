@@ -35,11 +35,9 @@
     }
 </div>
 <h1 class="w3-bar-item">Search</h1>
-<input @bind="PromptText" placeholder="Enter text here" style="width:400px" />
+<input id="input_Prompt" @bind="PromptText" placeholder="Enter text here" style="width:400px" />
 
-<button>Submit</button>
-<button @onclick="GetAssistant">Assistant</button>
-<p>You entered: @ResponseText</p>
+<button @onclick="SubmitPrompt">Submit</button>
 
 <div>
     <div class="w3-bar" id="spotifyPlaylistsDisplay">
@@ -53,6 +51,9 @@
                 </div>
             }
         }
+    </div>
+    <div class="w3-center" id="display_Loading" style="display:none">
+        <h1>Loading</h1>
     </div>
     <div id="spotifyPlaylistDisplay" style="display:none">
         <h1><b id="playlistName"></b></h1>
@@ -281,10 +282,12 @@
         return spotifyCode;
     }
 
-    private async void GetAssistant()
+    private async void SubmitPrompt()
     {
         try
         {
+            JSRuntime.InvokeVoidAsync("showLoading");
+
             //Console.WriteLine(PromptText);
             string endpoint = "https://api.openai.com/v1/chat/completions";
             string apiKey = _Configuration["OpenAI:APIKey"]; // Get the API Key from Open AI Account
@@ -310,20 +313,14 @@
             dynamic result = JsonConvert.DeserializeObject(responseString);
 
             string resultString = ExtractJsonFromResponse(result.choices[0].message.content.ToString());
-            OpenAIPlaylist playlist = JsonConvert.DeserializeObject<OpenAIPlaylist>(resultString);
 
-            Console.WriteLine("GetAssistant description: " + playlist.Description);
-            foreach (OpenAITrack track in playlist.Playlist)
-            {
-                Console.WriteLine($"GetAssistant track: Title - {track.Title}, Artist - {track.Artist}, SpotifyID - {track.Spotify_Id}");
-            }
-
-            string finalResult = JsonConvert.SerializeObject(playlist);
-            JSRuntime.InvokeVoidAsync("spotifyProcessChatResponse", finalResult);
+            // Don't need to serialize the result at the time
+            // JSRuntime.InvokeVoidAsync("spotifyProcessChatResponse", finalResult);
+            JSRuntime.InvokeVoidAsync("spotifyProcessChatResponse", resultString);
         } 
         catch (Exception ex) 
         {
-            Console.WriteLine("GetAssistant ex: " + ex.Message);
+            Console.WriteLine("SubmitPrompt ex: " + ex.Message);
         }
 
     }

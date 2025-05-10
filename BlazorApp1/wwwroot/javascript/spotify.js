@@ -86,22 +86,30 @@ function spotifyProcessChatResponse(jsonData) {
 
     let obj = JSON.parse(jsonData);
 
-    document.getElementById("ai_PlaylistDescription").innerText = obj.Description;
+    document.getElementById("input_Prompt").value = "";
+    document.getElementById("ai_PlaylistDescription").innerText = obj.description;
 
-    for (var index in obj.Playlist) {
+    for (var index in obj.playlist) {
 
         var elm_Li = document.createElement("li");
 
-        elm_Li.setAttribute("spotify_id", obj.Playlist[index].Spotify_Id);
+        elm_Li.setAttribute("spotify_id", obj.playlist[index].spotify_id);
         elm_Li.style.listStyleType = "none";
 
-        elm_Li.innerText = `${obj.Playlist[index].Title} - ${obj.Playlist[index].Artist}`;
+        elm_Li.innerText = `${obj.playlist[index].title} - ${obj.playlist[index].artist}`;
 
         aiListPlaylistTracks.appendChild(elm_Li);
     }
 
+    document.getElementById("display_Loading").style.display = "none";
     aiGeneratedPlaylist.style.display = "";
     document.getElementById("spotifyPlaylistDisplay").style.display = "none";
     document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
 
+}
+
+function showLoading() {
+    document.getElementById("display_Loading").style.display = "";
+    document.getElementById("spotifyPlaylistDisplay").style.display = "none";
+    document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
 }
