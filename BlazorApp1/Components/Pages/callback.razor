@@ -38,25 +38,5 @@
         var content = await response.Content.ReadAsStringAsync();
 
         Console.WriteLine(content);
-
-        // var tokenObj = System.Text.Json.JsonDocument.Parse(content).RootElement;
-        // return tokenObj.TryGetProperty("access_token", out var token) ? token.GetString() : null;
     }
-
-    // private async Task FetchUserProfile(string accessToken)
-    // {
-    //     Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-    //     var response = await Http.GetAsync("https://api.spotify.com/v1/me");
-    //     var content = await response.Content.ReadAsStringAsync();
-
-    //     var profile = System.Text.Json.JsonDocument.Parse(content).RootElement;
-
-    //     var displayName = profile.GetProperty("display_name").GetString();
-    //     var email = profile.GetProperty("email").GetString();
-    //     var spotifyId = profile.GetProperty("id").GetString();
-    //     var profileImageUrl = profile.GetProperty("images").EnumerateArray().FirstOrDefault().GetProperty("url").GetString();
-
-    //     Console.WriteLine($"Name: {displayName}, Email: {email}, ID: {spotifyId}, Image: {profileImageUrl}");
-    // }
-
 }

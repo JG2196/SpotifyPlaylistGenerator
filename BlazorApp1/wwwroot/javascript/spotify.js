@@ -112,3 +112,7 @@ function showLoading() {
     document.getElementById("spotifyPlaylistDisplay").style.display = "none";
     document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
 }
+
+function tryMe() {
+    return "I'M ALIVE!!!";
+}

@@ -37,6 +37,7 @@
 <input id="input_Prompt" @bind="PromptText" placeholder="Enter text here" style="width:400px" />
 
 <button @onclick="SubmitPrompt">Submit</button>
+<button @onclick="CreatePlaylistTest">TRY ME!</button>
 
 <div>
     <div class="w3-bar" id="spotifyPlaylistsDisplay">
@@ -85,15 +86,18 @@
         </div>
     </div>
     <div id="ai_GeneratedPlaylist" style="display:none">
+        <input id="input_PlaylistName" @bind="PlaylistName" placeholder="Enter name..." style="width:400px" />
+        <br />
         <h3 id="ai_PlaylistDescription"></h3>
-        <ol id="ai_ListPlaylistTracks">
-        </ol>
+        <br />
+        <ol id="ai_ListPlaylistTracks"></ol>
     </div>
 </div>
 
 @code {
-    private string PromptText { get; set; } = "";
-    private string ResponseText { get; set; } = "";
+    private string PromptText { get; set; } = string.Empty;
+    private string ResponseText { get; set; } = string.Empty;
+    private string PlaylistName { get; set; } = string.Empty;
     private string? AuthAccessToken = null;
     private string SpotifyCode = string.Empty;
     private string SpotifyAccessToken = string.Empty;
@@ -284,4 +288,33 @@
         StateHasChanged();
 
     }
+    private async void TestReturningResult() {
+        // Use to return the value from the function
+        string result = await JSRuntime.InvokeAsync<string>("tryMe");
+        Console.WriteLine("TestReturningResult result: " + result);
+    }
+    private async void CreatePlaylistTest() {
+
+        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration);
+
+        await spotifyAppServices.SpotifyCreatePlaylistTest(SpotifyAccessToken);
+
+        // string result = GetSpotifyCode();
+
+        // if (!string.IsNullOrEmpty(result))
+        // {
+        //     SpotifyCode = result;
+
+        //     if (string.IsNullOrEmpty(SpotifyAccessToken))
+        //     {
+        //         await GetAccessToken();
+        //     }
+        //     if (!bFoundUser)
+        //     {
+                
+        //     }
+
+        // }
+    }
 }
+
