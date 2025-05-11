@@ -105,7 +105,6 @@ function spotifyProcessChatResponse(jsonData) {
     aiGeneratedPlaylist.style.display = "";
     document.getElementById("spotifyPlaylistDisplay").style.display = "none";
     document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
-
 }
 
 function showLoading() {
