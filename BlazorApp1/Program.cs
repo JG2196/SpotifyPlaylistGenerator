@@ -1,10 +1,19 @@
 using BlazorApp1.Components;
+using BlazorApp1.SpotifyServices;
+using OpenAI;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddHttpClient("ApiClient", client =>
+{
+    client.BaseAddress = new Uri("https://api.spotify.com/");
+});
+var apiKey = builder.Configuration["OpenAI:APIKey"];
+builder.Services.AddSingleton(new OpenAIClient(apiKey));
 
 var app = builder.Build();
 
