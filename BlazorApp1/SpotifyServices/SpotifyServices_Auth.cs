@@ -8,6 +8,8 @@ using static System.Net.WebRequestMethods;
 using System.Text.Json;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
+using System.Text.Json.Nodes;
+using System.Text;
 
 namespace BlazorApp1.SpotifyServices
 {
@@ -306,6 +308,44 @@ namespace BlazorApp1.SpotifyServices
 
             return time;
 
+        }
+        public class PlaylistOBJ
+        {
+            public string Name { get; set; }
+            public string Description { get; set; }
+            public bool Public { get; set; }
+        }
+        public async Task<PlaylistTracks> SpotifyCreatePlaylistTest(string accessToken)
+        {
+
+            PlaylistTracks trackItem = new PlaylistTracks();
+
+            HttpClient httpClient = new HttpClient();
+
+            PlaylistOBJ playlistOBJ = new PlaylistOBJ();
+
+            playlistOBJ.Name = "Test Playlist";
+
+            string requestContent = JsonConvert.SerializeObject(playlistOBJ);
+            var httpContent = new StringContent(requestContent, Encoding.UTF8, "application/json");
+
+            try
+            {
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                var response = await httpClient.PostAsync("https://api.spotify.com/v1/users/joval101/playlists", httpContent);
+
+                string result = await response.Content.ReadAsStringAsync();
+                Console.WriteLine(result);
+
+                //var content = await response.Content.ReadAsStringAsync();
+                //trackItem = JsonConvert.DeserializeObject<PlaylistTracks>(content);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("SpotifyCreatePlaylistTest ex: " + ex.Message);
+            }
+
+            return trackItem;
         }
     }
 }
