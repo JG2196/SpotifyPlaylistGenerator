@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @using Newtonsoft.Json;
 @using System.Text;
+@using System.Text.Json;
 @using Newtonsoft.Json.Linq;
 @using OpenAI;
 @using System.Text.RegularExpressions;
@@ -38,6 +39,7 @@
 
 <button @onclick="SubmitPrompt">Submit</button>
 <button @onclick="CreatePlaylistTest">TRY ME!</button>
+<button @onclick="GetTrackTest">GET TRACK!</button>
 
 <div>
     <div class="w3-bar" id="spotifyPlaylistsDisplay">
@@ -297,24 +299,32 @@
 
         SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration);
 
-        await spotifyAppServices.SpotifyCreatePlaylistTest(SpotifyAccessToken);
+        string playlistId = await spotifyAppServices.SpotifyCreatePlaylistTest(SpotifyAccessToken);
 
-        // string result = GetSpotifyCode();
+        string[] result = await JSRuntime.InvokeAsync<string[]>("getTracks");
 
-        // if (!string.IsNullOrEmpty(result))
+        Console.WriteLine("fsdfasfa");
+        //string[] tracks = JsonSerializer.Deserialize<string[]>(result);
+        // var trackUris = result.Select(track => $"spotify:track:{track}").ToArray();
+
+        // var payload = new
         // {
-        //     SpotifyCode = result;
+        //     uris = trackUris
+        // };
 
-        //     if (string.IsNullOrEmpty(SpotifyAccessToken))
-        //     {
-        //         await GetAccessToken();
-        //     }
-        //     if (!bFoundUser)
-        //     {
-                
-        //     }
-
+        // string bodyTracks = System.Text.Json.JsonSerializer.Serialize(payload);
+        // string bodyTracks = "uris=";
+        // foreach (string track in result) {
+        //     bodyTracks += "spotify:track:" + track + ",";
         // }
+        // Uri.EscapeDataString(bodyTracks);
+
+        await spotifyAppServices.SpotifyAddTracks(SpotifyAccessToken, result, playlistId);
+    }
+    private async void GetTrackTest()
+    {
+        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration);
+        await spotifyAppServices.SpotifyGetTrackTest(SpotifyAccessToken);
     }
 }
 

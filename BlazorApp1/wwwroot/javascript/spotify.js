@@ -113,6 +113,21 @@ function showLoading() {
     document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
 }
 
+function getTracks() {
+
+    var listTrackIds = [];
+
+    var aiListPlaylistTracks = document.getElementById("ai_ListPlaylistTracks");
+    var child_Li = aiListPlaylistTracks.getElementsByTagName("li");
+
+    for (var i = 0; i < child_Li.length; i++) {
+        var spotifyTrackId = child_Li[i].getAttribute("spotify_id");
+        listTrackIds.push(spotifyTrackId);
+    }
+
+    return listTrackIds;
+}
+
 function tryMe() {
     return "I'M ALIVE!!!";
 }
