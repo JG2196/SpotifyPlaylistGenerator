@@ -48,6 +48,7 @@
     public class TrackItem
     {
         public Track Track = new Track();
+        public string Id { get; set; }
     }
     public class Track
     {
@@ -64,6 +65,16 @@
     }
     public class Artists
     {
+        public string Name { get; set; }
+    }
+
+    public class CreatePlaylist
+    {
+        public List<CreateTrack> listTracks = new List<CreateTrack>();
+    }
+    public class CreateTrack
+    {
+        public string Artist { get; set; }
         public string Name { get; set; }
     }
 }
