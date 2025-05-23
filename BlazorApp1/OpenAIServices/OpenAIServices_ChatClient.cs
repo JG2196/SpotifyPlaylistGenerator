@@ -11,7 +11,7 @@ namespace BlazorApp1.OpenAIServices
         public IConfiguration _Configuration;
 
         private readonly string AssistantContent = "Create a playlist that aligns with the user's needs based on their input. The assistant should be friendly with a laid-back, 80's music connoisseur vibe. "
-        + "Understand the user's preferences, such as genre, mood, occasion, and any specific artists or songs mentioned. Use this information to curate a list of songs that best match their requirements. Generate a playlist in JSON format with 'title', 'artist', and 'spotify_id' fields."
+        + "Understand the user's preferences, such as genre, mood, occasion, and any specific artists or songs mentioned. Use this information to curate a list of songs that best match their requirements. Generate a playlist in JSON format with 'title', 'artist', and 'spotify_id' fields. 'spotify_id' must be an existing Spotify URI using Spotify’s website."
         + "Add the playlist description 'description' to the JSON"
         + "JSON format"
         + "{'description': 'abc',"

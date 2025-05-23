@@ -94,6 +94,8 @@ function spotifyProcessChatResponse(jsonData) {
         var elm_Li = document.createElement("li");
 
         elm_Li.setAttribute("spotify_id", obj.playlist[index].spotify_id);
+        elm_Li.setAttribute("track_name", obj.playlist[index].title);
+        elm_Li.setAttribute("track_artist", obj.playlist[index].artist);
         elm_Li.style.listStyleType = "none";
 
         elm_Li.innerText = `${obj.playlist[index].title} - ${obj.playlist[index].artist}`;
@@ -111,4 +113,30 @@ function showLoading() {
     document.getElementById("display_Loading").style.display = "";
     document.getElementById("spotifyPlaylistDisplay").style.display = "none";
     document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
+}
+
+function getTracks() {
+
+    var listTracks = [];
+    //var listTrackIds = [];
+
+    var aiListPlaylistTracks = document.getElementById("ai_ListPlaylistTracks");
+    var child_Li = aiListPlaylistTracks.getElementsByTagName("li");
+
+    for (var i = 0; i < child_Li.length; i++) {
+        var spotifyTrackName = child_Li[i].getAttribute("track_name");
+        var spotifyTrackArtist = child_Li[i].getAttribute("track_artist");
+
+        var CreateTrack = {
+            artist: spotifyTrackArtist,
+            name: spotifyTrackName
+        }
+        listTracks.push(CreateTrack);
+    }
+    //JSON.stringify(listTracks)
+    return JSON.stringify(listTracks);
+}
+
+function tryMe() {
+    return "I'M ALIVE!!!";
 }

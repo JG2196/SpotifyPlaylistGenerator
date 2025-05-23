@@ -8,6 +8,8 @@ using static System.Net.WebRequestMethods;
 using System.Text.Json;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
+using System.Text.Json.Nodes;
+using System.Text;
 
 namespace BlazorApp1.SpotifyServices
 {
@@ -27,9 +29,10 @@ namespace BlazorApp1.SpotifyServices
             string spotifyAuthAddress = "https://accounts.spotify.com/authorize";
 
             string nUri = "https://localhost:7262/search";
+            Console.WriteLine("SpotifySignInAuth: " + _Configuration["SpotifyWeb:Scopes"]);
             try
             {
-                spotifyAuthUrl = $"{spotifyAuthAddress}?client_id={_Configuration["SpotifyWeb:ClientId"]}&response_type=code&redirect_uri={Uri.EscapeDataString(nUri)}&scopes={Uri.EscapeDataString(_Configuration["SpotifyWeb:Scopes"])}";
+                spotifyAuthUrl = $"{spotifyAuthAddress}?client_id={_Configuration["SpotifyWeb:ClientId"]}&response_type=code&redirect_uri={Uri.EscapeDataString(nUri)}&scope={Uri.EscapeDataString(_Configuration["SpotifyWeb:Scopes"])}";
             }
             catch (Exception ex)
             {
@@ -306,6 +309,113 @@ namespace BlazorApp1.SpotifyServices
 
             return time;
 
+        }
+        public class PlaylistOBJ
+        {
+            public string Name { get; set; }
+            public string Description { get; set; }
+            public bool Public { get; set; }
+        }
+        public async Task<string> SpotifyCreatePlaylistTest(string accessToken)
+        {
+
+            SpotifyPlaylist spotifyPlaylist = new SpotifyPlaylist();
+
+            HttpClient httpClient = new HttpClient();
+
+            var playlist = new
+            {
+                name = "Test Playlist",
+            };
+
+            string requestContent = JsonConvert.SerializeObject(playlist);
+            var httpContent = new StringContent(requestContent, Encoding.UTF8, "application/json");
+
+            try
+            {
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                var response = await httpClient.PostAsync("https://api.spotify.com/v1/users/joval101/playlists", httpContent);
+
+                string result = await response.Content.ReadAsStringAsync();
+                //Console.WriteLine(result);
+
+                spotifyPlaylist = JsonConvert.DeserializeObject<SpotifyPlaylist>(result);
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("SpotifyCreatePlaylistTest ex: " + ex.Message);
+            }
+
+            return spotifyPlaylist.Id;
+        }
+        public async Task SpotifyAddTracks(string accessToken, List<string> tracks, string playlistId)
+        {
+            HttpClient httpClient = new HttpClient();
+
+            List<string> trackUris = new List<string>();
+
+            foreach (string track in tracks)
+            {
+                trackUris.Add("spotify:track:" + track);
+            }
+            //var trackUris = tracks.Select(id => $"spotify:track:{id}").ToArray();
+
+            // Build JSON payload
+            var payload = new { uris = trackUris };
+            string json = System.Text.Json.JsonSerializer.Serialize(payload);
+
+            var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+
+            //var httpContent = new StringContent(tracks, Encoding.UTF8, "application/json");
+
+            try
+            {
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                var response = await httpClient.PostAsync($"https://api.spotify.com/v1/playlists/{playlistId}/tracks", httpContent);
+
+                //string result = await response.Content.ReadAsStringAsync();
+                Console.WriteLine(response);
+
+                //spotifyPlaylist = JsonConvert.DeserializeObject<SpotifyPlaylist>(result);
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("SpotifyCreatePlaylistTest ex: " + ex.Message);
+            }
+        }
+
+
+        public async Task<List<string>> SpotifyGetTrackTest(string accessToken, List<CreateTrack> listTracks)
+        {
+            List<string> listSpotifyTrackIds = new List<string>(); 
+            //HttpClient httpClient = new HttpClient();
+
+            try
+            {
+                //httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                foreach(CreateTrack track in listTracks) 
+                {
+                    HttpClient httpClient = new HttpClient();
+                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                    string query = $"track:\"{track.Name}\" artist:${track.Artist}";
+                    var encodedQuery = Uri.EscapeDataString(query);
+
+                    var response = await httpClient.GetAsync($"https://api.spotify.com/v1/search?q={encodedQuery}&type=track&limit=1");
+
+                    var result = await response.Content.ReadAsStringAsync();
+                    SpotifyPlaylist spotifyPlaylist = JsonConvert.DeserializeObject<SpotifyPlaylist>(result);
+
+                    listSpotifyTrackIds.Add(spotifyPlaylist.Tracks.Items[0].Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("SpotifyGetTrackTest ex: " + ex.Message);
+            }
+            return listSpotifyTrackIds;
         }
     }
 }
