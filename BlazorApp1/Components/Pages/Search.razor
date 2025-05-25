@@ -88,7 +88,7 @@
         </div>
     </div>
     <div id="ai_GeneratedPlaylist" style="display:none">
-        <input id="input_PlaylistName" @bind="PlaylistName" placeholder="Enter name..." style="width:400px" />
+        <input id="input_PlaylistName" @bind="PlaylistNameText" placeholder="Enter name..." style="width:400px"/>
         <br />
         <h3 id="ai_PlaylistDescription"></h3>
         <br />
@@ -99,7 +99,7 @@
 @code {
     private string PromptText { get; set; } = string.Empty;
     private string ResponseText { get; set; } = string.Empty;
-    private string PlaylistName { get; set; } = string.Empty;
+    private string PlaylistNameText { get; set; } = string.Empty;
     private string? AuthAccessToken = null;
     private string SpotifyCode = string.Empty;
     private string SpotifyAccessToken = string.Empty;
@@ -295,38 +295,12 @@
         string result = await JSRuntime.InvokeAsync<string>("tryMe");
         Console.WriteLine("TestReturningResult result: " + result);
     }
-    //private async void CreatePlaylistTest() {
-
-    //SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration);
-
-    //string playlistId = await spotifyAppServices.SpotifyCreatePlaylistTest(SpotifyAccessToken);
-
-    //string[] result = await JSRuntime.InvokeAsync<string[]>("getTracks");
-
-    //Console.WriteLine("fsdfasfa");
-    //string[] tracks = JsonSerializer.Deserialize<string[]>(result);
-    // var trackUris = result.Select(track => $"spotify:track:{track}").ToArray();
-
-    // var payload = new
-    // {
-    //     uris = trackUris
-    // };
-
-    // string bodyTracks = System.Text.Json.JsonSerializer.Serialize(payload);
-    // string bodyTracks = "uris=";
-    // foreach (string track in result) {
-    //     bodyTracks += "spotify:track:" + track + ",";
-    // }
-    // Uri.EscapeDataString(bodyTracks);
-
-    //await spotifyAppServices.SpotifyAddTracks(SpotifyAccessToken, result, playlistId);
-    //}
+    
     private async void GetTrackTest()
     {
         try
         {
-            string result = await JSRuntime.InvokeAsync<string>("getTracks");
-            //string[] result = await JSRuntime.InvokeAsync<string[]>("getTracks");
+            string result = await JSRuntime.InvokeAsync<string>("getTracks");;
 
             List<CreateTrack> listTracks;
             listTracks = JsonConvert.DeserializeObject<List<CreateTrack>>(result);
@@ -334,11 +308,11 @@
             CreatePlaylist createPlaylist = new CreatePlaylist();
 
             SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration);
-            List<string> listSpotifyTrackIds = await spotifyAppServices.SpotifyGetTrackTest(SpotifyAccessToken, listTracks);
+            List<string> listSpotifyTrackIds = await spotifyAppServices.SpotifyGetTrackIDs(SpotifyAccessToken, listTracks);
 
-            string playlistId = await spotifyAppServices.SpotifyCreatePlaylistTest(SpotifyAccessToken);
+            string playlistId = await spotifyAppServices.SpotifyCreatePlaylist(SpotifyAccessToken, PlaylistNameText);
 
-            await spotifyAppServices.SpotifyAddTracks(SpotifyAccessToken, listSpotifyTrackIds, playlistId);
+            await spotifyAppServices.SpotifyAddTracksToPlaylist(SpotifyAccessToken, listSpotifyTrackIds, playlistId);
         }
         catch(Exception ex)
         {
