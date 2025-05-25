@@ -248,7 +248,6 @@ namespace BlazorApp1.SpotifyServices
                 foreach (TrackItem selectedTrack in playlist.Tracks.Items)
                 {
                     selectedTrack.Track.TrackTime = SpotifyGenTrackTime(selectedTrack.Track.Duration_ms);
-                    //Console.WriteLine($"Track: {selectedTrack.Track.Name}, Duration: {selectedTrack.Track.TrackTime}");
                 }
 
             }
@@ -316,7 +315,7 @@ namespace BlazorApp1.SpotifyServices
             public string Description { get; set; }
             public bool Public { get; set; }
         }
-        public async Task<string> SpotifyCreatePlaylistTest(string accessToken)
+        public async Task<string> SpotifyCreatePlaylist(string accessToken, string playlistName)
         {
 
             SpotifyPlaylist spotifyPlaylist = new SpotifyPlaylist();
@@ -325,7 +324,7 @@ namespace BlazorApp1.SpotifyServices
 
             var playlist = new
             {
-                name = "Test Playlist",
+                name = playlistName,
             };
 
             string requestContent = JsonConvert.SerializeObject(playlist);
@@ -344,12 +343,12 @@ namespace BlazorApp1.SpotifyServices
             }
             catch (Exception ex)
             {
-                Console.WriteLine("SpotifyCreatePlaylistTest ex: " + ex.Message);
+                Console.WriteLine("SpotifyCreatePlaylist ex: " + ex.Message);
             }
 
             return spotifyPlaylist.Id;
         }
-        public async Task SpotifyAddTracks(string accessToken, List<string> tracks, string playlistId)
+        public async Task SpotifyAddTracksToPlaylist(string accessToken, List<string> tracks, string playlistId)
         {
             HttpClient httpClient = new HttpClient();
 
@@ -359,7 +358,6 @@ namespace BlazorApp1.SpotifyServices
             {
                 trackUris.Add("spotify:track:" + track);
             }
-            //var trackUris = tracks.Select(id => $"spotify:track:{id}").ToArray();
 
             // Build JSON payload
             var payload = new { uris = trackUris };
@@ -367,39 +365,29 @@ namespace BlazorApp1.SpotifyServices
 
             var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
-            //var httpContent = new StringContent(tracks, Encoding.UTF8, "application/json");
-
             try
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
                 var response = await httpClient.PostAsync($"https://api.spotify.com/v1/playlists/{playlistId}/tracks", httpContent);
-
-                //string result = await response.Content.ReadAsStringAsync();
-                Console.WriteLine(response);
-
-                //spotifyPlaylist = JsonConvert.DeserializeObject<SpotifyPlaylist>(result);
-
+                //Console.WriteLine(response);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("SpotifyCreatePlaylistTest ex: " + ex.Message);
+                Console.WriteLine("SpotifyAddTracksToPlaylist ex: " + ex.Message);
             }
         }
 
 
-        public async Task<List<string>> SpotifyGetTrackTest(string accessToken, List<CreateTrack> listTracks)
+        public async Task<List<string>> SpotifyGetTrackIDs(string accessToken, List<CreateTrack> listTracks)
         {
             List<string> listSpotifyTrackIds = new List<string>(); 
-            //HttpClient httpClient = new HttpClient();
+            HttpClient httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             try
             {
-                //httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
                 foreach(CreateTrack track in listTracks) 
                 {
-                    HttpClient httpClient = new HttpClient();
-                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
                     string query = $"track:\"{track.Name}\" artist:${track.Artist}";
                     var encodedQuery = Uri.EscapeDataString(query);
 
@@ -408,12 +396,15 @@ namespace BlazorApp1.SpotifyServices
                     var result = await response.Content.ReadAsStringAsync();
                     SpotifyPlaylist spotifyPlaylist = JsonConvert.DeserializeObject<SpotifyPlaylist>(result);
 
-                    listSpotifyTrackIds.Add(spotifyPlaylist.Tracks.Items[0].Id);
+                    if (spotifyPlaylist.Tracks.Items.Count > 0)
+                    {
+                        listSpotifyTrackIds.Add(spotifyPlaylist.Tracks.Items[0].Id);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("SpotifyGetTrackTest ex: " + ex.Message);
+                Console.WriteLine("SpotifyGetTrackIDs ex: " + ex.Message);
             }
             return listSpotifyTrackIds;
         }
