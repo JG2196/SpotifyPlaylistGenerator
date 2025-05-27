@@ -25,11 +25,9 @@ namespace BlazorApp1.SpotifyServices
         public string SpotifySignInAuth()
         {
             string? spotifyAuthUrl = null;
-
             string spotifyAuthAddress = "https://accounts.spotify.com/authorize";
-
             string nUri = "https://localhost:7262/search";
-            Console.WriteLine("SpotifySignInAuth: " + _Configuration["SpotifyWeb:Scopes"]);
+            
             try
             {
                 spotifyAuthUrl = $"{spotifyAuthAddress}?client_id={_Configuration["SpotifyWeb:ClientId"]}&response_type=code&redirect_uri={Uri.EscapeDataString(nUri)}&scope={Uri.EscapeDataString(_Configuration["SpotifyWeb:Scopes"])}";
@@ -309,12 +307,6 @@ namespace BlazorApp1.SpotifyServices
             return time;
 
         }
-        public class PlaylistOBJ
-        {
-            public string Name { get; set; }
-            public string Description { get; set; }
-            public bool Public { get; set; }
-        }
         public async Task<string> SpotifyCreatePlaylist(string accessToken, string playlistName)
         {
 
@@ -346,6 +338,7 @@ namespace BlazorApp1.SpotifyServices
                 Console.WriteLine("SpotifyCreatePlaylist ex: " + ex.Message);
             }
 
+            Console.WriteLine($"SpotifyCreatePlaylist: Playlist - {playlistName} created successfully");
             return spotifyPlaylist.Id;
         }
         public async Task SpotifyAddTracksToPlaylist(string accessToken, List<string> tracks, string playlistId)
@@ -375,17 +368,20 @@ namespace BlazorApp1.SpotifyServices
             {
                 Console.WriteLine("SpotifyAddTracksToPlaylist ex: " + ex.Message);
             }
+            Console.WriteLine($"SpotifyAddTracksToPlaylist: Successfully added {tracks.Count} tracks to playlist");
         }
-
-
         public async Task<List<string>> SpotifyGetTrackIDs(string accessToken, List<CreateTrack> listTracks)
         {
-            List<string> listSpotifyTrackIds = new List<string>(); 
+            List<string> listSpotifyTrackIds = new List<string>();
+            int successfulSearch = 0;
+
             HttpClient httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             try
             {
+                Console.WriteLine("SpotifyGetTrackIDs number of tracks to find: " + listTracks.Count);
+
                 foreach(CreateTrack track in listTracks) 
                 {
                     string query = $"track:\"{track.Name}\" artist:${track.Artist}";
@@ -399,6 +395,7 @@ namespace BlazorApp1.SpotifyServices
                     if (spotifyPlaylist.Tracks.Items.Count > 0)
                     {
                         listSpotifyTrackIds.Add(spotifyPlaylist.Tracks.Items[0].Id);
+                        successfulSearch++;
                     }
                 }
             }
@@ -406,6 +403,8 @@ namespace BlazorApp1.SpotifyServices
             {
                 Console.WriteLine("SpotifyGetTrackIDs ex: " + ex.Message);
             }
+
+            Console.WriteLine($"SpotifyGetTrackIDs: Successfully found {successfulSearch} out of {listTracks.Count} tracks");
             return listSpotifyTrackIds;
         }
     }
