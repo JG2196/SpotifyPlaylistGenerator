@@ -5,7 +5,7 @@
 
 }
 function spotifyDisplayUserInfo(jsonDataUser) {
-    console.debug("spotifyDisplayUserInfo");
+    //console.debug("spotifyDisplayUserInfo");
 
     let obj = JSON.parse(jsonDataUser);
 
@@ -55,19 +55,17 @@ function spotifyDisplayPlaylists(jsonListPlaylists) {
     }
 }
 function spotifyOpenPlaylist(playlistName) {
-    //var selectedPlaylist = document.getElementById("selectedPlaylist");
-    //selectedPlaylist.innerHTML = "";
-
+    
     document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
     document.getElementById("spotifyPlaylistDisplay").style.display = "";
 
     document.getElementById("playlistName").innerText = playlistName;
 
 }
-function testAsyncTask() {
-    console.debug("testAsyncTask START!");
-    DotNet.invokeMethodAsync('BlazorApp1', 'TestTask');
-}
+//function testAsyncTask() {
+//    console.debug("testAsyncTask START!");
+//    DotNet.invokeMethodAsync('BlazorApp1', 'TestTask');
+//}
 function spotifyAlterString(str) {
 
     const strLength = str.length;
@@ -93,7 +91,7 @@ function spotifyProcessChatResponse(jsonData) {
 
         var elm_Li = document.createElement("li");
 
-        elm_Li.setAttribute("spotify_id", obj.playlist[index].spotify_id);
+        //elm_Li.setAttribute("spotify_id", obj.playlist[index].spotify_id);
         elm_Li.setAttribute("track_name", obj.playlist[index].title);
         elm_Li.setAttribute("track_artist", obj.playlist[index].artist);
         elm_Li.style.listStyleType = "none";
@@ -118,7 +116,6 @@ function showLoading() {
 function getTracks() {
 
     var listTracks = [];
-    //var listTrackIds = [];
 
     var aiListPlaylistTracks = document.getElementById("ai_ListPlaylistTracks");
     var child_Li = aiListPlaylistTracks.getElementsByTagName("li");
@@ -133,10 +130,6 @@ function getTracks() {
         }
         listTracks.push(CreateTrack);
     }
-    //JSON.stringify(listTracks)
-    return JSON.stringify(listTracks);
-}
 
-function tryMe() {
-    return "I'M ALIVE!!!";
+    return JSON.stringify(listTracks);
 }

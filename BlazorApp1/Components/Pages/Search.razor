@@ -87,6 +87,7 @@
             }
         </div>
     </div>
+    <br />
     <div id="ai_GeneratedPlaylist" style="display:none">
         <input id="input_PlaylistName" @bind="PlaylistNameText" placeholder="Enter name..." style="width:400px"/>
         <br />
@@ -289,11 +290,6 @@
         SpotifySelectedPlaylist = await spotifyAppServices.SpotifyGetPlaylist(id, SpotifyAccessToken);
         StateHasChanged();
 
-    }
-    private async void TestReturningResult() {
-        // Use to return the value from the function
-        string result = await JSRuntime.InvokeAsync<string>("tryMe");
-        Console.WriteLine("TestReturningResult result: " + result);
     }
     
     private async void GetTrackTest()
