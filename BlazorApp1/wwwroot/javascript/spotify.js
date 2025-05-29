@@ -11,6 +11,9 @@ function spotifyDisplayUserInfo(jsonDataUser) {
 
     document.getElementById("user_id").innerText = obj.SpotifyID;
 }
+function displayNavigation() {
+    document.getElementById("div_Sidebar").style.display = "";
+}
 function spotifyDisplayPlaylists(jsonListPlaylists) {
     
     let obj = JSON.parse(jsonListPlaylists);
@@ -58,7 +61,13 @@ function spotifyOpenPlaylist(playlistName) {
     
     document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
     document.getElementById("spotifyPlaylistDisplay").style.display = "";
+    document.getElementById("playlistName").innerText = playlistName;
+
+}
+function spotifyOpenNewPlaylist(playlistName) {
+
     document.getElementById("ai_GeneratedPlaylist").style.display = "none";
+    document.getElementById("spotifyPlaylistDisplay").style.display = "";
     document.getElementById("playlistName").innerText = playlistName;
 
 }

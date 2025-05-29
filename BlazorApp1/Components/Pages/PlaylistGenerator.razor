@@ -22,10 +22,10 @@
     <link rel="stylesheet" type="text/css" href="~/w3.css" />
     <script type="text/javascript" src="~/javascript/spotify.js"></script>
 </head>
-@page "/search"
+@page "/playlistgenerator"
 @rendermode InteractiveServer
 
-<PageTitle>Search</PageTitle>
+<PageTitle>Playlists</PageTitle>
 
 <div class="w3-bar">
     <button class="w3-bar-item w3-right" @onclick="AuthorizeSignOut">Spotify sign out</button>
@@ -39,31 +39,28 @@
 
 <button @onclick="SubmitPrompt">Submit</button>
 @* <button @onclick="CreatePlaylistTest">TRY ME!</button> *@
-<button @onclick="CreatePlaylist">GET TRACK!</button>
+<button id="btn_CreatePlaylist" @onclick="CreatePlaylist" style="display:none">Create Playlist</button>
 
 <div>
-    <div class="w3-bar" id="spotifyPlaylistsDisplay">
-        @if (SpotifyListPlaylists != null)
-        {
-            foreach (SpotifyPlaylist playlist in SpotifyListPlaylists)
-            {
-                <div class="w3-card w3-bar-item w3-round-xlarge" @onclick="() => OpenPlaylist(playlist.Id, playlist.Name)" style="padding-top:16px;margin:8px;cursor:pointer">
-                    <img class="w3-round-large" style="width:200px;height:200px" src="@playlist.Images[0].Url" />
-                    <h5 style="text-align:right"><b>@playlist.ShortName</b></h5>
-                </div>
-            }
-        }
-    </div>
     <div class="w3-center" id="display_Loading" style="display:none">
         <h1>Loading</h1>
     </div>
+    <br />
+    <div id="ai_GeneratedPlaylist" style="display:none">
+        <input id="input_PlaylistName" @bind="PlaylistNameText" placeholder="Enter name..." style="width:400px"/>
+        <br />
+        <h3 id="ai_PlaylistDescription"></h3>
+        <br />
+        <ol id="ai_ListPlaylistTracks"></ol>
+    </div>
+
     <div id="spotifyPlaylistDisplay" style="display:none">
         <h1><b id="playlistName"></b></h1>
         <div style="width:50%;float:left">
             <ol>
                 @if (SpotifySelectedPlaylist != null)
                 {
-                    foreach(TrackItem track in SpotifySelectedPlaylist.Tracks.Items)
+                    foreach (TrackItem track in SpotifySelectedPlaylist.Tracks.Items)
                     {
                         <li style="list-style-type:none">
                             <div class="w3-bar">
@@ -86,14 +83,6 @@
                 <img class="w3-round-large" style="width:90%" src="@SpotifySelectedPlaylist.Images[0].Url" />
             }
         </div>
-    </div>
-    <br />
-    <div id="ai_GeneratedPlaylist" style="display:none">
-        <input id="input_PlaylistName" @bind="PlaylistNameText" placeholder="Enter name..." style="width:400px"/>
-        <br />
-        <h3 id="ai_PlaylistDescription"></h3>
-        <br />
-        <ol id="ai_ListPlaylistTracks"></ol>
     </div>
 </div>
 
@@ -142,6 +131,7 @@
                 }
                 if (!bFoundUser)
                 {
+                    await JSRuntime.InvokeVoidAsync("displayNavigation");
                     SpotifyAuthUser = await spotifyAppServices.SpotifyGetProfile(SpotifyAccessToken);
                     SpotifyListPlaylists = await spotifyAppServices.SpotifyGetPlaylists(SpotifyAccessToken);
 
@@ -211,7 +201,7 @@
         {
             SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration/* , ProtectedSessionStore */);
 
-            spotifyAuthUrl = spotifyAppServices.SpotifySignInAuth();
+            spotifyAuthUrl = spotifyAppServices.SpotifySignInAuth(false);
         }
         catch (Exception ex)
         {
@@ -251,7 +241,7 @@
 
             if (!string.IsNullOrEmpty(SpotifyCode))
             {
-                SpotifyAccessToken = await spotifyAppServices.ExchangeCodeForToken(SpotifyCode);
+                SpotifyAccessToken = await spotifyAppServices.ExchangeCodeForToken(SpotifyCode, false);
                 Console.WriteLine("GetAccessToken SpotifyAccessToken: " + SpotifyAccessToken);
             }
             else
@@ -274,22 +264,6 @@
         {
             Console.WriteLine("RemoveToken Ex: " + ex.Message);
         }
-    }
-    private async void OpenPlaylist(string id, string playlistName) 
-    {
-
-        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration);
-
-        if (string.IsNullOrEmpty(SpotifyAccessToken))
-        {
-            await GetAccessToken();
-        }
-
-        Console.WriteLine("OpenPlaylist id: " + id);
-        await JSRuntime.InvokeVoidAsync("spotifyOpenPlaylist", playlistName);
-        SpotifySelectedPlaylist = await spotifyAppServices.SpotifyGetPlaylist(id, SpotifyAccessToken);
-        StateHasChanged();
-
     }
 
     private async void CreatePlaylist()
@@ -315,6 +289,22 @@
         {
             Console.WriteLine("CreatePlaylist ex: " + ex.Message);
         }
+    }
+    private async void OpenPlaylist(string id, string playlistName)
+    {
+
+        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration);
+
+        if (string.IsNullOrEmpty(SpotifyAccessToken))
+        {
+            await GetAccessToken();
+        }
+
+        Console.WriteLine("OpenPlaylist id: " + id);
+        await JSRuntime.InvokeVoidAsync("spotifyOpenNewPlaylist", playlistName);
+        SpotifySelectedPlaylist = await spotifyAppServices.SpotifyGetPlaylist(id, SpotifyAccessToken);
+        StateHasChanged();
+
     }
 }
 

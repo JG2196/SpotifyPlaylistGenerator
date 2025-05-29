@@ -22,11 +22,14 @@ namespace BlazorApp1.SpotifyServices
             _Configuration = configuration;
         }
 
-        public string SpotifySignInAuth()
+        public string SpotifySignInAuth(bool ToPlaylists)
         {
             string? spotifyAuthUrl = null;
             string spotifyAuthAddress = "https://accounts.spotify.com/authorize";
-            string nUri = "https://localhost:7262/search";
+            string nUri = "https://localhost:7262/playlists";
+            if (!ToPlaylists) {
+                nUri = "https://localhost:7262/playlistgenerator";
+            }
             
             try
             {
@@ -40,10 +43,12 @@ namespace BlazorApp1.SpotifyServices
             return spotifyAuthUrl;
         }
 
-        public async Task<string?> ExchangeCodeForToken(string code)
+        public async Task<string?> ExchangeCodeForToken(string code, bool ToPlaylists)
         {
             string? accessToken = null;
 
+            string redirectURI = _Configuration["SpotifyWeb:RedirectUri"];
+            if (!ToPlaylists) { redirectURI = _Configuration["SpotifyWeb:RedirectUriTwo"]; }
             try
             {
 
@@ -53,7 +58,7 @@ namespace BlazorApp1.SpotifyServices
                 {
                     new KeyValuePair<string, string>("grant_type", "authorization_code"),
                     new KeyValuePair<string, string>("code", code),
-                    new KeyValuePair<string, string>("redirect_uri", _Configuration["SpotifyWeb:RedirectUri"]),
+                    new KeyValuePair<string, string>("redirect_uri", redirectURI),
                     new KeyValuePair<string, string>("client_id", _Configuration["SpotifyWeb:ClientId"]),
                     new KeyValuePair<string, string>("client_secret", _Configuration["SpotifyWeb:ClientSecret"]),
                 });

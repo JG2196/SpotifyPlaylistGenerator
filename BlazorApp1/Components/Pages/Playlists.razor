@@ -1,0 +1,262 @@
+﻿@using OpenAI.Chat;
+@using OpenAI.Assistants
+@using OpenAIServices;
+@using SpotifyServices;
+@using BlazorApp1.Data;
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using Newtonsoft.Json;
+@using System.Text;
+@using System.Text.Json;
+@using Newtonsoft.Json.Linq;
+@using OpenAI;
+@using System.Text.RegularExpressions;
+
+@inject NavigationManager NavigationManager
+@inject HttpClient Http;
+@inject IConfiguration _Configuration
+@inject IJSRuntime JSRuntime
+@inject ProtectedSessionStorage ProtectedSessionStore
+@inject OpenAI.OpenAIClient OpenAIClient
+
+<head>
+    <link rel="stylesheet" type="text/css" href="~/w3.css" />
+    <script type="text/javascript" src="~/javascript/spotify.js"></script>
+</head>
+@page "/playlists"
+@rendermode InteractiveServer
+
+<PageTitle>Playlists</PageTitle>
+
+<div class="w3-bar">
+    <button class="w3-bar-item w3-right" @onclick="AuthorizeSignOut">Spotify sign out</button>
+    @if (SpotifyAuthUser != null)
+    {
+        <h5 class="w3-right" style="margin:8px"><b id="user_id">@SpotifyAuthUser.DisplayName</b></h5>
+    }
+</div>
+
+<div>
+    <div class="w3-bar" id="spotifyPlaylistsDisplay">
+        @if (SpotifyListPlaylists != null)
+        {
+            foreach (SpotifyPlaylist playlist in SpotifyListPlaylists)
+            {
+                <div class="w3-card w3-bar-item w3-round-xlarge" @onclick="() => OpenPlaylist(playlist.Id, playlist.Name)" style="padding-top:16px;margin:8px;cursor:pointer">
+                    <img class="w3-round-large" style="width:200px;height:200px" src="@playlist.Images[0].Url" />
+                    <h5 style="text-align:right"><b>@playlist.ShortName</b></h5>
+                </div>
+            }
+        }
+    </div>
+    
+    <div id="spotifyPlaylistDisplay" style="display:none">
+        <h1><b id="playlistName"></b></h1>
+        <div style="width:50%;float:left">
+            <ol>
+                @if (SpotifySelectedPlaylist != null)
+                {
+                    foreach(TrackItem track in SpotifySelectedPlaylist.Tracks.Items)
+                    {
+                        <li style="list-style-type:none">
+                            <div class="w3-bar">
+                                <div class="w3-bar-item">
+                                    <h5>@track.Track.Name - @track.Track.TrackTime</h5>
+                                    <h5 style="float:left;margin-top:0px">@track.Track.Artists[0].Name - @track.Track.Album.Name</h5>
+                                </div>
+                                <div class="w3-bar-item" style="float:right">
+                                    <button class="w3-button w3-red w3-round-xxlarge w3-bar-item">x</button>
+                                </div>
+                            </div>
+                        </li>
+                    }
+                }
+            </ol>
+        </div>
+        <div style="width:50%;float:right">
+            @if (SpotifySelectedPlaylist != null)
+            {
+                <img class="w3-round-large" style="width:90%" src="@SpotifySelectedPlaylist.Images[0].Url" />
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string PromptText { get; set; } = string.Empty;
+    private string ResponseText { get; set; } = string.Empty;
+    private string PlaylistNameText { get; set; } = string.Empty;
+    private string? AuthAccessToken = null;
+    private string SpotifyCode = string.Empty;
+    private string SpotifyAccessToken = string.Empty;
+    private string userMessage = "";
+    private string responseMessage = "";
+
+
+    public bool bFoundUser = false;
+
+    public SpotifyAuthUser? SpotifyAuthUser { get; set; } = null;
+    public List<SpotifyPlaylist>? SpotifyListPlaylists { get; set; } = null;
+    public SpotifyPlaylist? SpotifySelectedPlaylist { get; set; } = null;
+
+    //Prevent loops on render
+    private bool _hasInitialized = false;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_hasInitialized)
+        {
+            _hasInitialized = true;
+            await InitSpotifyFlow();
+        }
+    }
+    private async Task InitSpotifyFlow()
+    {
+        try
+        {
+            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration);
+
+            string result = GetSpotifyCode();
+
+            if (!string.IsNullOrEmpty(result))
+            {
+                SpotifyCode = result;
+
+                if (string.IsNullOrEmpty(SpotifyAccessToken))
+                {
+                    await GetAccessToken();
+                }
+                if (!bFoundUser)
+                {
+                    await JSRuntime.InvokeVoidAsync("displayNavigation");
+                    SpotifyAuthUser = await spotifyAppServices.SpotifyGetProfile(SpotifyAccessToken);
+                    SpotifyListPlaylists = await spotifyAppServices.SpotifyGetPlaylists(SpotifyAccessToken);
+
+                    if (SpotifyAuthUser != null)
+                    {
+                        bFoundUser = true;
+                        StateHasChanged();
+                    }
+
+                }
+
+            }
+            else
+            {
+                AuthorizeSpotify();
+            }
+        }
+        catch (NavigationException navEx)
+        {
+            Console.WriteLine("OnInitializedAsync navEx: " + navEx.Message);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("OnInitializedAsync Ex: " + ex.Message);
+        }
+    }
+    private string GetSpotifyCode()
+    {
+        string? spotifyCode = null;
+        try 
+        {
+            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            spotifyCode = query["code"] ?? null;
+            Console.WriteLine("GetSpotifyCode spotifyCode: " + spotifyCode);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("GetSpotifyCode Ex: " + ex.Message);
+        }
+
+        return spotifyCode;
+    }
+    private void AuthorizeSpotify()
+    {
+        string? spotifyAuthUrl = null;
+
+        try
+        {
+            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration/* , ProtectedSessionStore */);
+
+            spotifyAuthUrl = spotifyAppServices.SpotifySignInAuth(true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("AuthorizeSpotify Ex: " + ex.Message);
+        }
+
+        if (!string.IsNullOrEmpty(spotifyAuthUrl))
+        {
+            NavigationManager.NavigateTo(spotifyAuthUrl, true);
+        }
+        else
+        {
+            Console.WriteLine("AuthorizeSpotify: spotifyAuthUrl is null");
+        }
+    }
+    private async Task AuthorizeSignOut()
+    {
+        string signoutUrl = "https://accounts.spotify.com/logout/";
+        //Open new tab to signout
+        await JSRuntime.InvokeVoidAsync("open", signoutUrl, "_blank");
+        await RemoveToken();
+        //Call JS function
+        await JSRuntime.InvokeVoidAsync("navigate", "");
+
+    }
+    private async Task GetAccessToken()
+    {
+        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration/* , ProtectedSessionStore */);
+
+        try
+        {
+            if (!string.IsNullOrEmpty(SpotifyAccessToken))
+            {
+                Console.WriteLine("GetAccessToken SpotifyCode: " + SpotifyCode);
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(SpotifyCode))
+            {
+                SpotifyAccessToken = await spotifyAppServices.ExchangeCodeForToken(SpotifyCode, true);
+                Console.WriteLine("GetAccessToken SpotifyAccessToken: " + SpotifyAccessToken);
+            }
+            else
+            {
+                Console.WriteLine("GetAccessToken: SpotifyCode is null or Empty!");
+            }
+        }
+        catch (Exception ex) 
+        {
+            Console.WriteLine("GetAccessToken Ex: " + ex.Message);
+        }
+    }
+    private async Task RemoveToken()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("sessionStorage.removeItem", "spotify_token");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("RemoveToken Ex: " + ex.Message);
+        }
+    }
+    private async void OpenPlaylist(string id, string playlistName) 
+    {
+
+        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration);
+
+        if (string.IsNullOrEmpty(SpotifyAccessToken))
+        {
+            await GetAccessToken();
+        }
+
+        Console.WriteLine("OpenPlaylist id: " + id);
+        await JSRuntime.InvokeVoidAsync("spotifyOpenPlaylist", playlistName);
+        SpotifySelectedPlaylist = await spotifyAppServices.SpotifyGetPlaylist(id, SpotifyAccessToken);
+        StateHasChanged();
+
+    }
+}
+
