@@ -8,15 +8,21 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
-        <div class="nav-item px-3">
+        @* <div class="nav-item px-3" id="nav_Signin">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Sign in
+            </NavLink>
+        </div> *@
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="playlists">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Playlists
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="search">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Search
+            <NavLink class="nav-link" href="playlistgenerator">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Playlist Generator
             </NavLink>
         </div>
     </nav>
