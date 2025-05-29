@@ -39,7 +39,7 @@
 
 <button @onclick="SubmitPrompt">Submit</button>
 @* <button @onclick="CreatePlaylistTest">TRY ME!</button> *@
-<button @onclick="GetTrackTest">GET TRACK!</button>
+<button @onclick="CreatePlaylist">GET TRACK!</button>
 
 <div>
     <div class="w3-bar" id="spotifyPlaylistsDisplay">
@@ -291,8 +291,8 @@
         StateHasChanged();
 
     }
-    
-    private async void GetTrackTest()
+
+    private async void CreatePlaylist()
     {
         try
         {
@@ -309,10 +309,11 @@
             string playlistId = await spotifyAppServices.SpotifyCreatePlaylist(SpotifyAccessToken, PlaylistNameText);
 
             await spotifyAppServices.SpotifyAddTracksToPlaylist(SpotifyAccessToken, listSpotifyTrackIds, playlistId);
+            OpenPlaylist(playlistId, PlaylistNameText);
         }
         catch(Exception ex)
         {
-            Console.WriteLine("GetTrackTest ex: " + ex.Message);
+            Console.WriteLine("CreatePlaylist ex: " + ex.Message);
         }
     }
 }

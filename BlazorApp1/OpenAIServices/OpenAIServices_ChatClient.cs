@@ -39,7 +39,7 @@ namespace BlazorApp1.OpenAIServices
         + "2. 'Norwegian Wood - The Beatles'"
         + "3. 'Take Five - Dave Brubeck'"
         + "4. 'Blackbird - The Beatles'"
-        + "(Actual playlists created should include a minimum of 20 songs to ensure sufficient variety, and a maximum of 25 songs.)"
+        + "(Actual playlists created should include a minimum of 30 songs to ensure sufficient variety, and a maximum of 40 songs.)"
         + "# Notes"
         + "- Ensure the playlist is tailored as closely as possible to the provided preferences."
         + "- Handle vague or broad inputs by providing a balanced playlist across suggested elements."
