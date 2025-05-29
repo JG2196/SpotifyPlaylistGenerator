@@ -58,7 +58,7 @@ function spotifyOpenPlaylist(playlistName) {
     
     document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
     document.getElementById("spotifyPlaylistDisplay").style.display = "";
-
+    document.getElementById("ai_GeneratedPlaylist").style.display = "none";
     document.getElementById("playlistName").innerText = playlistName;
 
 }

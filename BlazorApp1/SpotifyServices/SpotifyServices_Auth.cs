@@ -317,6 +317,7 @@ namespace BlazorApp1.SpotifyServices
             var playlist = new
             {
                 name = playlistName,
+                description = "AI playlist, " + playlistName
             };
 
             string requestContent = JsonConvert.SerializeObject(playlist);
