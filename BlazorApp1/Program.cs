@@ -13,6 +13,8 @@ builder.Services.AddHttpClient("ApiClient", client =>
     client.BaseAddress = new Uri("https://api.spotify.com/");
 });
 var apiKey = builder.Configuration["OpenAI:APIKey"];
+builder.Services.AddDataProtection();
+builder.Services.AddSingleton<SpotifyServicess_TokenService>();
 builder.Services.AddSingleton(new OpenAIClient(apiKey));
 
 var app = builder.Build();

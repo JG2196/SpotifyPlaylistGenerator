@@ -17,6 +17,7 @@
 @inject IJSRuntime JSRuntime
 @inject ProtectedSessionStorage ProtectedSessionStore
 @inject OpenAI.OpenAIClient OpenAIClient
+@inject SpotifyServicess_TokenService TokenService
 
 <head>
     <link rel="stylesheet" type="text/css" href="~/w3.css" />
@@ -102,7 +103,7 @@
     private bool _hasInitialized = false;
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime);
+        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime, TokenService);
 
         if (firstRender && !_hasInitialized)
         {
@@ -188,7 +189,7 @@
 
         try
         {
-            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime/* , ProtectedSessionStore */);
+            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime, TokenService/* , ProtectedSessionStore */);
 
             spotifyAuthUrl = spotifyAppServices.SpotifySignInAuth(true);
         }
@@ -256,19 +257,20 @@
     }
     private async void OpenPlaylist(string id, string playlistName) 
     {
-
-        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime);
+        string? accessToken = null;
+        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime, TokenService);
 
         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
 
         if (string.IsNullOrEmpty(SpotifyAccessToken))
         {
-            SpotifyAccessToken = await spotifyAppServices.GetAccessToken(SpotifyCode);
+            accessToken = TokenService.AccessToken;
+            //SpotifyAccessToken = await spotifyAppServices.GetAccessToken(SpotifyCode);
         }
 
         Console.WriteLine("OpenPlaylist id: " + id);
         await JSRuntime.InvokeVoidAsync("spotifyOpenPlaylist", playlistName);
-        SpotifySelectedPlaylist = await spotifyAppServices.SpotifyGetPlaylist(id, SpotifyAccessToken);
+        SpotifySelectedPlaylist = await spotifyAppServices.SpotifyGetPlaylist(id, accessToken);
         StateHasChanged();
 
     }
