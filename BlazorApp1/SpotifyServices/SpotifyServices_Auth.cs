@@ -11,7 +11,6 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using static System.Net.WebRequestMethods;
-using BlazorApp1.Data;
 
 namespace BlazorApp1.SpotifyServices
 {
@@ -22,7 +21,6 @@ namespace BlazorApp1.SpotifyServices
         public SpotifyServicess_TokenService _TokenService;
         public string SpotifyAccessToken;
         public string SpotifyCode;
-        public bool bFoundUser = false;
 
         public SpotifyAppServices(IConfiguration configuration, IJSRuntime jsRuntime, SpotifyServicess_TokenService tokenService)
         {
@@ -52,10 +50,8 @@ namespace BlazorApp1.SpotifyServices
             return spotifyAuthUrl;
         }
 
-        public async Task<string?> ExchangeCodeForToken(string code, bool ToPlaylists)
+        public async Task ExchangeCodeForToken(string code, bool ToPlaylists)
         {
-            string? accessToken1 = null;
-
             string redirectURI = _Configuration["SpotifyWeb:RedirectUri"];
             if (!ToPlaylists) { redirectURI = _Configuration["SpotifyWeb:RedirectUriTwo"]; }
             try
@@ -73,67 +69,74 @@ namespace BlazorApp1.SpotifyServices
                 });
 
                 var response = await httpClient.PostAsync("https://accounts.spotify.com/api/token", requestContent);
-                //var responseContent = await response.Content.ReadFromJsonAsync<SpotifyTokenResponse>();
                 var json = await response.Content.ReadFromJsonAsync<JsonElement>();
 
                 var accessToken = json.GetProperty("access_token").GetString();
                 var expiresIn = json.GetProperty("expires_in").GetInt32();
                 var refreshToken = json.GetProperty("refresh_token").GetString();
 
-                accessToken1 = accessToken;
-
                 _TokenService.SetTokens(accessToken, expiresIn, refreshToken);
-
-                //accessToken = responseContent.access_token;
             }
             catch (Exception ex)
             {
                 Console.WriteLine("ExchangeCodeForToken Ex: " + ex.Message);
             }
-
-            return accessToken1;
         }
+        
+        public async Task<bool> TryRefreshAccessTokenAsync()
+        {
+            var refreshToken = _TokenService.GetRefreshToken();
+            if (string.IsNullOrEmpty(refreshToken)) return false;
+
+            HttpClient httpClient = new HttpClient();
+
+            var requestContent = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("grant_type", "refresh_token"),
+                    new KeyValuePair<string, string>( "refresh_token", refreshToken),
+                    new KeyValuePair<string, string>("client_id", _Configuration["SpotifyWeb:ClientId"]),
+                    new KeyValuePair<string, string>("client_secret", _Configuration["SpotifyWeb:ClientSecret"]),
+            });
+
+            var response = await httpClient.PostAsync("https://accounts.spotify.com/api/token", requestContent);
+
+            if (!response.IsSuccessStatusCode) return false;
+
+            var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+            var accessToken = json.GetProperty("access_token").GetString();
+            var expiresIn = json.GetProperty("expires_in").GetInt32();
+
+            _TokenService.SetTokens(accessToken, expiresIn, null); // Don't overwrite refresh token
+            return true;
+        }
+
         public async Task<SpotifyAuthUserData> InitSpotifyFlow(string SpotifyCode)
         {
             SpotifyAuthUserData? spotifyAuthUserData = null;
             try
             {
-                
-                //SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration);
-
-                //string result = GetSpotifyCode(uri);
-
                 if (!string.IsNullOrEmpty(SpotifyCode))
                 {
-
-                    if (string.IsNullOrEmpty(SpotifyAccessToken))
+                    if (string.IsNullOrEmpty(_TokenService.AccessToken))
                     {
-                        await GetAccessToken(SpotifyCode);
+                        await ExchangeCodeForToken(SpotifyCode, true);
                     }
-                    if (!bFoundUser)
+                    var token = _TokenService.AccessToken;
+
+                    await _JSRunTime.InvokeVoidAsync("displayNavigation");
+                    SpotifyAuthUser spotifyAuthUser = await SpotifyGetProfile(token);
+                    List<SpotifyPlaylist>? spotifyListPlaylists = await SpotifyGetPlaylists(token);
+
+                    if (spotifyAuthUser != null)
                     {
-                        await _JSRunTime.InvokeVoidAsync("displayNavigation");
-                        SpotifyAuthUser spotifyAuthUser = await SpotifyGetProfile(SpotifyAccessToken);
-                        List<SpotifyPlaylist>? spotifyListPlaylists = await SpotifyGetPlaylists(SpotifyAccessToken);
+                        spotifyAuthUserData = new SpotifyAuthUserData();
 
+                        spotifyAuthUserData.SpotifyAuthUser = spotifyAuthUser;
+                        spotifyAuthUserData.ListSpotifyPlaylists = spotifyListPlaylists;
 
-                        if (spotifyAuthUser != null)
-                        {
-                            spotifyAuthUserData = new SpotifyAuthUserData();
-
-                            spotifyAuthUserData.SpotifyAuthUser = spotifyAuthUser;
-                            spotifyAuthUserData.ListSpotifyPlaylists = spotifyListPlaylists;
-
-                            bFoundUser = true;
-                            Console.WriteLine("InitSpotifyFlow Found user successfully: displayname - " + spotifyAuthUser.DisplayName);
-                            // pass to js to update page
-                            // spotifyAuthUser
-                            // spotifyListPlaylists
-                            //StateHasChanged();
-                        }
+                        Console.WriteLine("InitSpotifyFlow Found user successfully: displayname - " + spotifyAuthUser.DisplayName);
                     }
                 }
-                //return spotifyAuthUserData;
             }
             catch (NavigationException navEx)
             {
@@ -150,7 +153,6 @@ namespace BlazorApp1.SpotifyServices
             string? spotifyCode = null;
             try
             {
-                //var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
                 var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
                 spotifyCode = query["code"] ?? null;
                 Console.WriteLine("GetSpotifyCode spotifyCode: " + spotifyCode);
@@ -162,43 +164,6 @@ namespace BlazorApp1.SpotifyServices
 
             return spotifyCode;
         }
-        public async Task<string> GetAccessToken(string SpotifyCode)
-        {
-            //SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration/* , ProtectedSessionStore */);
-
-            try
-            {
-                if (!string.IsNullOrEmpty(SpotifyAccessToken))
-                {
-                    Console.WriteLine("GetAccessToken SpotifyCode: " + SpotifyCode);
-                    return SpotifyAccessToken;
-                }
-
-                if (!string.IsNullOrEmpty(SpotifyCode))
-                {
-                    SpotifyAccessToken = await ExchangeCodeForToken(SpotifyCode, true);
-                    Console.WriteLine("GetAccessToken SpotifyAccessToken: " + SpotifyAccessToken);
-                }
-                else
-                {
-                    Console.WriteLine("GetAccessToken: SpotifyCode is null or Empty!");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("GetAccessToken Ex: " + ex.Message);
-            }
-            return SpotifyAccessToken;
-        }
-
-
-
-
-
-
-
-
-
 
         public async Task<SpotifyAuthUser> SpotifyGetProfile(string spotifyAccessToken)
         {
@@ -410,7 +375,6 @@ namespace BlazorApp1.SpotifyServices
         {
 
             PlaylistTracks trackItem = new PlaylistTracks();
-
             HttpClient httpClient = new HttpClient();
 
             try
