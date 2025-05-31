@@ -1,25 +1,32 @@
-﻿using Microsoft.JSInterop;
-using BlazorApp1.Data;
-using System;
-using System.Threading.Tasks;
+﻿using BlazorApp1.Data;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
-using System.Net.Http;
-using static System.Net.WebRequestMethods;
-using System.Text.Json;
+using Microsoft.JSInterop;
 using Newtonsoft.Json;
+using System;
+using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text.Json.Nodes;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Threading.Tasks;
+using static System.Net.WebRequestMethods;
+using BlazorApp1.Data;
 
 namespace BlazorApp1.SpotifyServices
 {
     public partial class SpotifyAppServices
     {
         public IConfiguration _Configuration;
+        public IJSRuntime _JSRunTime;
+        public string SpotifyAccessToken;
+        public string SpotifyCode;
+        public bool bFoundUser = false;
 
-        public SpotifyAppServices(IConfiguration configuration)
+        public SpotifyAppServices(IConfiguration configuration, IJSRuntime jssRuntime)
         {
             _Configuration = configuration;
+            _JSRunTime = jssRuntime;
         }
 
         public string SpotifySignInAuth(bool ToPlaylists)
@@ -76,6 +83,113 @@ namespace BlazorApp1.SpotifyServices
 
             return accessToken;
         }
+        public async Task<SpotifyAuthUserData> InitSpotifyFlow(string SpotifyCode)
+        {
+            SpotifyAuthUserData? spotifyAuthUserData = null;
+            try
+            {
+                
+                //SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration);
+
+                //string result = GetSpotifyCode(uri);
+
+                if (!string.IsNullOrEmpty(SpotifyCode))
+                {
+
+                    if (string.IsNullOrEmpty(SpotifyAccessToken))
+                    {
+                        await GetAccessToken(SpotifyCode);
+                    }
+                    if (!bFoundUser)
+                    {
+                        await _JSRunTime.InvokeVoidAsync("displayNavigation");
+                        SpotifyAuthUser spotifyAuthUser = await SpotifyGetProfile(SpotifyAccessToken);
+                        List<SpotifyPlaylist>? spotifyListPlaylists = await SpotifyGetPlaylists(SpotifyAccessToken);
+
+
+                        if (spotifyAuthUser != null)
+                        {
+                            spotifyAuthUserData = new SpotifyAuthUserData();
+
+                            spotifyAuthUserData.SpotifyAuthUser = spotifyAuthUser;
+                            spotifyAuthUserData.ListSpotifyPlaylists = spotifyListPlaylists;
+
+                            bFoundUser = true;
+                            Console.WriteLine("InitSpotifyFlow Found user successfully: displayname - " + spotifyAuthUser.DisplayName);
+                            // pass to js to update page
+                            // spotifyAuthUser
+                            // spotifyListPlaylists
+                            //StateHasChanged();
+                        }
+                    }
+                }
+                //return spotifyAuthUserData;
+            }
+            catch (NavigationException navEx)
+            {
+                Console.WriteLine("OnInitializedAsync navEx: " + navEx.Message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("OnInitializedAsync Ex: " + ex.Message);
+            }
+            return spotifyAuthUserData;
+        }
+        public string GetSpotifyCode(Uri uri)
+        {
+            string? spotifyCode = null;
+            try
+            {
+                //var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+                var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+                spotifyCode = query["code"] ?? null;
+                Console.WriteLine("GetSpotifyCode spotifyCode: " + spotifyCode);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("GetSpotifyCode Ex: " + ex.Message);
+            }
+
+            return spotifyCode;
+        }
+        public async Task<string> GetAccessToken(string SpotifyCode)
+        {
+            //SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration/* , ProtectedSessionStore */);
+
+            try
+            {
+                if (!string.IsNullOrEmpty(SpotifyAccessToken))
+                {
+                    Console.WriteLine("GetAccessToken SpotifyCode: " + SpotifyCode);
+                    return SpotifyAccessToken;
+                }
+
+                if (!string.IsNullOrEmpty(SpotifyCode))
+                {
+                    SpotifyAccessToken = await ExchangeCodeForToken(SpotifyCode, true);
+                    Console.WriteLine("GetAccessToken SpotifyAccessToken: " + SpotifyAccessToken);
+                }
+                else
+                {
+                    Console.WriteLine("GetAccessToken: SpotifyCode is null or Empty!");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("GetAccessToken Ex: " + ex.Message);
+            }
+            return SpotifyAccessToken;
+        }
+
+
+
+
+
+
+
+
+
+
         public async Task<SpotifyAuthUser> SpotifyGetProfile(string spotifyAccessToken)
         {
 

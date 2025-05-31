@@ -102,81 +102,93 @@
     private bool _hasInitialized = false;
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime);
+
         if (firstRender && !_hasInitialized)
         {
             _hasInitialized = true;
-            await InitSpotifyFlow();
-        }
-    }
-    private async Task InitSpotifyFlow()
-    {
-        try
-        {
-            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration);
+            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+            SpotifyCode = spotifyAppServices.GetSpotifyCode(uri);
 
-            string result = GetSpotifyCode();
+            SpotifyAuthUserData spotifyAuthUserData = await spotifyAppServices.InitSpotifyFlow(SpotifyCode);
 
-            if (!string.IsNullOrEmpty(result))
-            {
-                SpotifyCode = result;
-
-                if (string.IsNullOrEmpty(SpotifyAccessToken))
-                {
-                    await GetAccessToken();
-                }
-                if (!bFoundUser)
-                {
-                    await JSRuntime.InvokeVoidAsync("displayNavigation");
-                    SpotifyAuthUser = await spotifyAppServices.SpotifyGetProfile(SpotifyAccessToken);
-                    SpotifyListPlaylists = await spotifyAppServices.SpotifyGetPlaylists(SpotifyAccessToken);
-
-                    if (SpotifyAuthUser != null)
-                    {
-                        bFoundUser = true;
-                        StateHasChanged();
-                    }
-
-                }
-
-            }
+            if (spotifyAuthUserData == null) { AuthorizeSpotify(); }
             else
             {
-                AuthorizeSpotify();
+                SpotifyAuthUser = spotifyAuthUserData.SpotifyAuthUser;
+                SpotifyListPlaylists = spotifyAuthUserData.ListSpotifyPlaylists;
+                bFoundUser = true;
+                StateHasChanged();
             }
         }
-        catch (NavigationException navEx)
-        {
-            Console.WriteLine("OnInitializedAsync navEx: " + navEx.Message);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("OnInitializedAsync Ex: " + ex.Message);
-        }
     }
-    private string GetSpotifyCode()
-    {
-        string? spotifyCode = null;
-        try 
-        {
-            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
-            spotifyCode = query["code"] ?? null;
-            Console.WriteLine("GetSpotifyCode spotifyCode: " + spotifyCode);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("GetSpotifyCode Ex: " + ex.Message);
-        }
+    // private async Task InitSpotifyFlow()
+    // {
+    //     try
+    //     {
+    //         SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime);
 
-        return spotifyCode;
-    }
+    //         string result = GetSpotifyCode();
+
+    //         if (!string.IsNullOrEmpty(result))
+    //         {
+    //             SpotifyCode = result;
+
+    //             if (string.IsNullOrEmpty(SpotifyAccessToken))
+    //             {
+    //                 await GetAccessToken();
+    //             }
+    //             if (!bFoundUser)
+    //             {
+    //                 await JSRuntime.InvokeVoidAsync("displayNavigation");
+    //                 SpotifyAuthUser = await spotifyAppServices.SpotifyGetProfile(SpotifyAccessToken);
+    //                 SpotifyListPlaylists = await spotifyAppServices.SpotifyGetPlaylists(SpotifyAccessToken);
+
+    //                 if (SpotifyAuthUser != null)
+    //                 {
+    //                     bFoundUser = true;
+    //                     StateHasChanged();
+    //                 }
+    //             }
+    //         }
+    //         else
+    //         {
+    //             AuthorizeSpotify();
+    //         }
+    //     }
+    //     catch (NavigationException navEx)
+    //     {
+    //         Console.WriteLine("OnInitializedAsync navEx: " + navEx.Message);
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Console.WriteLine("OnInitializedAsync Ex: " + ex.Message);
+    //     }
+    // }
+    // private string GetSpotifyCode()
+    // {
+    //     string? spotifyCode = null;
+    //     try 
+    //     {
+    //         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+    //         var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+    //         spotifyCode = query["code"] ?? null;
+    //         Console.WriteLine("GetSpotifyCode spotifyCode: " + spotifyCode);
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Console.WriteLine("GetSpotifyCode Ex: " + ex.Message);
+    //     }
+
+    //     return spotifyCode;
+    // }
     private void AuthorizeSpotify()
     {
         string? spotifyAuthUrl = null;
 
         try
         {
-            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration/* , ProtectedSessionStore */);
+            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime/* , ProtectedSessionStore */);
 
             spotifyAuthUrl = spotifyAppServices.SpotifySignInAuth(true);
         }
@@ -204,33 +216,33 @@
         await JSRuntime.InvokeVoidAsync("navigate", "");
 
     }
-    private async Task GetAccessToken()
-    {
-        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration/* , ProtectedSessionStore */);
+    // private async Task GetAccessToken()
+    // {
+    //     SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime/* , ProtectedSessionStore */);
 
-        try
-        {
-            if (!string.IsNullOrEmpty(SpotifyAccessToken))
-            {
-                Console.WriteLine("GetAccessToken SpotifyCode: " + SpotifyCode);
-                return;
-            }
+    //     try
+    //     {
+    //         if (!string.IsNullOrEmpty(SpotifyAccessToken))
+    //         {
+    //             Console.WriteLine("GetAccessToken SpotifyCode: " + SpotifyCode);
+    //             return;
+    //         }
 
-            if (!string.IsNullOrEmpty(SpotifyCode))
-            {
-                SpotifyAccessToken = await spotifyAppServices.ExchangeCodeForToken(SpotifyCode, true);
-                Console.WriteLine("GetAccessToken SpotifyAccessToken: " + SpotifyAccessToken);
-            }
-            else
-            {
-                Console.WriteLine("GetAccessToken: SpotifyCode is null or Empty!");
-            }
-        }
-        catch (Exception ex) 
-        {
-            Console.WriteLine("GetAccessToken Ex: " + ex.Message);
-        }
-    }
+    //         if (!string.IsNullOrEmpty(SpotifyCode))
+    //         {
+    //             SpotifyAccessToken = await spotifyAppServices.ExchangeCodeForToken(SpotifyCode, true);
+    //             Console.WriteLine("GetAccessToken SpotifyAccessToken: " + SpotifyAccessToken);
+    //         }
+    //         else
+    //         {
+    //             Console.WriteLine("GetAccessToken: SpotifyCode is null or Empty!");
+    //         }
+    //     }
+    //     catch (Exception ex) 
+    //     {
+    //         Console.WriteLine("GetAccessToken Ex: " + ex.Message);
+    //     }
+    // }
     private async Task RemoveToken()
     {
         try
@@ -245,11 +257,13 @@
     private async void OpenPlaylist(string id, string playlistName) 
     {
 
-        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration);
+        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime);
+
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
 
         if (string.IsNullOrEmpty(SpotifyAccessToken))
         {
-            await GetAccessToken();
+            SpotifyAccessToken = await spotifyAppServices.GetAccessToken(SpotifyCode);
         }
 
         Console.WriteLine("OpenPlaylist id: " + id);

@@ -1,5 +1,10 @@
 ﻿namespace BlazorApp1.Data
 {
+    public class SpotifyAuthUserData
+    {
+        public SpotifyAuthUser SpotifyAuthUser { get; set; }
+        public List<SpotifyPlaylist> ListSpotifyPlaylists { get; set; }
+    }
     public class SpotifyTokenResponse
     {
         public string access_token { get; set; }

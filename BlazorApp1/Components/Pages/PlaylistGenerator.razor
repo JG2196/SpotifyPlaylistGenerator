@@ -27,7 +27,7 @@
 
 <PageTitle>Playlists</PageTitle>
 
-<div class="w3-bar">
+@* <div class="w3-bar">
     <button class="w3-bar-item w3-right" @onclick="AuthorizeSignOut">Spotify sign out</button>
     @if (SpotifyAuthUser != null)
     {
@@ -38,7 +38,6 @@
 <input id="input_Prompt" @bind="PromptText" placeholder="Enter text here" style="width:400px" />
 
 <button @onclick="SubmitPrompt">Submit</button>
-@* <button @onclick="CreatePlaylistTest">TRY ME!</button> *@
 <button id="btn_CreatePlaylist" @onclick="CreatePlaylist" style="display:none">Create Playlist</button>
 
 <div>
@@ -84,9 +83,9 @@
             }
         </div>
     </div>
-</div>
+</div> *@
 
-@code {
+@* @code {
     private string PromptText { get; set; } = string.Empty;
     private string ResponseText { get; set; } = string.Empty;
     private string PlaylistNameText { get; set; } = string.Empty;
@@ -306,5 +305,5 @@
         StateHasChanged();
 
     }
-}
+} *@
 
