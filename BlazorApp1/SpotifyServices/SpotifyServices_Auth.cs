@@ -19,14 +19,16 @@ namespace BlazorApp1.SpotifyServices
     {
         public IConfiguration _Configuration;
         public IJSRuntime _JSRunTime;
+        public SpotifyServicess_TokenService _TokenService;
         public string SpotifyAccessToken;
         public string SpotifyCode;
         public bool bFoundUser = false;
 
-        public SpotifyAppServices(IConfiguration configuration, IJSRuntime jssRuntime)
+        public SpotifyAppServices(IConfiguration configuration, IJSRuntime jsRuntime, SpotifyServicess_TokenService tokenService)
         {
             _Configuration = configuration;
-            _JSRunTime = jssRuntime;
+            _JSRunTime = jsRuntime;
+            _TokenService = tokenService;
         }
 
         public string SpotifySignInAuth(bool ToPlaylists)
@@ -52,7 +54,7 @@ namespace BlazorApp1.SpotifyServices
 
         public async Task<string?> ExchangeCodeForToken(string code, bool ToPlaylists)
         {
-            string? accessToken = null;
+            string? accessToken1 = null;
 
             string redirectURI = _Configuration["SpotifyWeb:RedirectUri"];
             if (!ToPlaylists) { redirectURI = _Configuration["SpotifyWeb:RedirectUriTwo"]; }
@@ -71,17 +73,25 @@ namespace BlazorApp1.SpotifyServices
                 });
 
                 var response = await httpClient.PostAsync("https://accounts.spotify.com/api/token", requestContent);
-                var responseContent = await response.Content.ReadFromJsonAsync<SpotifyTokenResponse>();
+                //var responseContent = await response.Content.ReadFromJsonAsync<SpotifyTokenResponse>();
+                var json = await response.Content.ReadFromJsonAsync<JsonElement>();
 
+                var accessToken = json.GetProperty("access_token").GetString();
+                var expiresIn = json.GetProperty("expires_in").GetInt32();
+                var refreshToken = json.GetProperty("refresh_token").GetString();
 
-                accessToken = responseContent.access_token;
+                accessToken1 = accessToken;
+
+                _TokenService.SetTokens(accessToken, expiresIn, refreshToken);
+
+                //accessToken = responseContent.access_token;
             }
             catch (Exception ex)
             {
                 Console.WriteLine("ExchangeCodeForToken Ex: " + ex.Message);
             }
 
-            return accessToken;
+            return accessToken1;
         }
         public async Task<SpotifyAuthUserData> InitSpotifyFlow(string SpotifyCode)
         {
