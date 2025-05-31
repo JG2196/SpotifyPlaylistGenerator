@@ -8,8 +8,6 @@ namespace BlazorApp1.SpotifyServices
         private string _accessToken;
         private DateTime _expiresAt;
 
-
-
         // Simulated DB or secure store
         private string _protectedRefreshToken;
 
