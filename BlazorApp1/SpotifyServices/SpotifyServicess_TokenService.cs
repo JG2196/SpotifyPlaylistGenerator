@@ -35,7 +35,7 @@ namespace BlazorApp1.SpotifyServices
             return _protectedRefreshToken is null ? null : _protector.Unprotect(_protectedRefreshToken);
         }
 
-        public void ClearTokens()
+        public async Task ClearTokens()
         {
             _accessToken = null;
             _protectedRefreshToken = null;

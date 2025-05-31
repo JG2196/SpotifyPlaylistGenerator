@@ -8,7 +8,7 @@
 @using System.Text;
 @using System.Text.Json;
 @using Newtonsoft.Json.Linq;
-@using OpenAI;
+@* @using OpenAI; *@
 @using System.Text.RegularExpressions;
 
 @inject NavigationManager NavigationManager
@@ -16,13 +16,13 @@
 @inject IConfiguration _Configuration
 @inject IJSRuntime JSRuntime
 @inject ProtectedSessionStorage ProtectedSessionStore
-@inject OpenAI.OpenAIClient OpenAIClient
+@* @inject OpenAI.OpenAIClient OpenAIClient *@
 @inject SpotifyServicess_TokenService TokenService
 
-<head>
+@* <head>
     <link rel="stylesheet" type="text/css" href="~/w3.css" />
     <script type="text/javascript" src="~/javascript/spotify.js"></script>
-</head>
+</head> *@
 @page "/playlists"
 @rendermode InteractiveServer
 
@@ -38,59 +38,54 @@
 
 <div>
     <div class="w3-bar" id="spotifyPlaylistsDisplay">
-        @if (SpotifyListPlaylists != null)
+    @if (SpotifyListPlaylists != null)
+    {
+        foreach (SpotifyPlaylist playlist in SpotifyListPlaylists)
         {
-            foreach (SpotifyPlaylist playlist in SpotifyListPlaylists)
-            {
-                <div class="w3-card w3-bar-item w3-round-xlarge" @onclick="() => OpenPlaylist(playlist.Id, playlist.Name)" style="padding-top:16px;margin:8px;cursor:pointer">
-                    <img class="w3-round-large" style="width:200px;height:200px" src="@playlist.Images[0].Url" />
-                    <h5 style="text-align:right"><b>@playlist.ShortName</b></h5>
-                </div>
-            }
+            <div class="w3-card w3-bar-item w3-round-xlarge" @onclick="() => OpenPlaylist(playlist.Id, playlist.Name)" style="padding-top:16px;margin:8px;cursor:pointer">
+                <img class="w3-round-large" style="width:200px;height:200px" src="@playlist.Images[0].Url" />
+                <h5 style="text-align:right"><b>@playlist.ShortName</b></h5>
+            </div>
         }
+    }
     </div>
     
     <div id="spotifyPlaylistDisplay" style="display:none">
         <h1><b id="playlistName"></b></h1>
         <div style="width:50%;float:left">
             <ol>
-                @if (SpotifySelectedPlaylist != null)
+            @if (SpotifySelectedPlaylist != null)
+            {
+                foreach(TrackItem track in SpotifySelectedPlaylist.Tracks.Items)
                 {
-                    foreach(TrackItem track in SpotifySelectedPlaylist.Tracks.Items)
+                    @if (track.Track != null)
                     {
                         <li style="list-style-type:none">
-                            <div class="w3-bar">
-                                <div class="w3-bar-item">
-                                    <h5>@track.Track.Name - @track.Track.TrackTime</h5>
-                                    <h5 style="float:left;margin-top:0px">@track.Track.Artists[0].Name - @track.Track.Album.Name</h5>
-                                </div>
-                                <div class="w3-bar-item" style="float:right">
-                                    <button class="w3-button w3-red w3-round-xxlarge w3-bar-item">x</button>
-                                </div>
+                        <div class="w3-bar">
+                            <div class="w3-bar-item">
+                                <h5>@track.Track.Name - @track.Track.TrackTime</h5>
+                                <h5 style="float:left;margin-top:0px">@track.Track.Artists[0].Name - @track.Track.Album.Name</h5>
                             </div>
+                            <div class="w3-bar-item" style="float:right">
+                                <button class="w3-button w3-red w3-round-xxlarge w3-bar-item">x</button>
+                            </div>
+                        </div>
                         </li>
                     }
                 }
+            }
             </ol>
         </div>
         <div style="width:50%;float:right">
-            @if (SpotifySelectedPlaylist != null)
-            {
-                <img class="w3-round-large" style="width:90%" src="@SpotifySelectedPlaylist.Images[0].Url" />
-            }
+        @if (SpotifySelectedPlaylist != null)
+        {
+            <img class="w3-round-large" style="width:90%" src="@SpotifySelectedPlaylist.Images[0].Url" />
+        }
         </div>
     </div>
 </div>
 
 @code {
-    private string PromptText { get; set; } = string.Empty;
-    private string ResponseText { get; set; } = string.Empty;
-    private string PlaylistNameText { get; set; } = string.Empty;
-    private string SpotifyAccessToken = string.Empty;
-    private string userMessage = "";
-    private string responseMessage = "";
-
-
     public bool bFoundUser = false;
 
     public SpotifyAuthUser? SpotifyAuthUser { get; set; } = null;
@@ -127,7 +122,7 @@
 
         try
         {
-            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime, TokenService/* , ProtectedSessionStore */);
+            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime, TokenService);
 
             spotifyAuthUrl = spotifyAppServices.SpotifySignInAuth(true);
         }
@@ -159,7 +154,7 @@
     {
         try
         {
-            await JSRuntime.InvokeVoidAsync("sessionStorage.removeItem", "spotify_token");
+            await TokenService.ClearTokens();
         }
         catch (Exception ex)
         {
@@ -170,19 +165,16 @@
     {
         SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime, TokenService);
 
-        if (TokenService.IsAccessTokenExpired)
-        {
-            await spotifyAppServices.TryRefreshAccessTokenAsync();
-        }
-
-        var accessToken = TokenService.AccessToken;
-
-        if (!string.IsNullOrEmpty(accessToken))
+        try
         {
             Console.WriteLine("OpenPlaylist id: " + id);
             await JSRuntime.InvokeVoidAsync("spotifyOpenPlaylist", playlistName);
-            SpotifySelectedPlaylist = await spotifyAppServices.SpotifyGetPlaylist(id, accessToken);
+            SpotifySelectedPlaylist = await spotifyAppServices.SpotifyGetPlaylist(id);
             StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("OpenPlaylist ex: " + ex.Message);
         }
     }
 }

@@ -19,8 +19,6 @@ namespace BlazorApp1.SpotifyServices
         public IConfiguration _Configuration;
         public IJSRuntime _JSRunTime;
         public SpotifyServicess_TokenService _TokenService;
-        public string SpotifyAccessToken;
-        public string SpotifyCode;
 
         public SpotifyAppServices(IConfiguration configuration, IJSRuntime jsRuntime, SpotifyServicess_TokenService tokenService)
         {
@@ -49,7 +47,6 @@ namespace BlazorApp1.SpotifyServices
 
             return spotifyAuthUrl;
         }
-
         public async Task ExchangeCodeForToken(string code, bool ToPlaylists)
         {
             string redirectURI = _Configuration["SpotifyWeb:RedirectUri"];
@@ -82,7 +79,6 @@ namespace BlazorApp1.SpotifyServices
                 Console.WriteLine("ExchangeCodeForToken Ex: " + ex.Message);
             }
         }
-        
         public async Task<bool> TryRefreshAccessTokenAsync()
         {
             var refreshToken = _TokenService.GetRefreshToken();
@@ -109,7 +105,6 @@ namespace BlazorApp1.SpotifyServices
             _TokenService.SetTokens(accessToken, expiresIn, null); // Don't overwrite refresh token
             return true;
         }
-
         public async Task<SpotifyAuthUserData> InitSpotifyFlow(string SpotifyCode)
         {
             SpotifyAuthUserData? spotifyAuthUserData = null;
@@ -121,11 +116,11 @@ namespace BlazorApp1.SpotifyServices
                     {
                         await ExchangeCodeForToken(SpotifyCode, true);
                     }
-                    var token = _TokenService.AccessToken;
+                    //var accessToken = _TokenService.AccessToken;
 
                     await _JSRunTime.InvokeVoidAsync("displayNavigation");
-                    SpotifyAuthUser spotifyAuthUser = await SpotifyGetProfile(token);
-                    List<SpotifyPlaylist>? spotifyListPlaylists = await SpotifyGetPlaylists(token);
+                    SpotifyAuthUser spotifyAuthUser = await SpotifyGetProfile();
+                    List<SpotifyPlaylist>? spotifyListPlaylists = await SpotifyGetPlaylists();
 
                     if (spotifyAuthUser != null)
                     {
@@ -155,7 +150,7 @@ namespace BlazorApp1.SpotifyServices
             {
                 var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
                 spotifyCode = query["code"] ?? null;
-                Console.WriteLine("GetSpotifyCode spotifyCode: " + spotifyCode);
+                //Console.WriteLine("GetSpotifyCode spotifyCode: " + spotifyCode);
             }
             catch (Exception ex)
             {
@@ -165,7 +160,7 @@ namespace BlazorApp1.SpotifyServices
             return spotifyCode;
         }
 
-        public async Task<SpotifyAuthUser> SpotifyGetProfile(string spotifyAccessToken)
+        public async Task<SpotifyAuthUser> SpotifyGetProfile()
         {
 
             SpotifyAuthUser spotifyAuthUser = new SpotifyAuthUser();
@@ -174,7 +169,19 @@ namespace BlazorApp1.SpotifyServices
 
             try
             {
-                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", spotifyAccessToken);
+                if (_TokenService.IsAccessTokenExpired)
+                {
+                    await TryRefreshAccessTokenAsync();
+                }
+
+                var accessToken = _TokenService.AccessToken;
+
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    throw new Exception("Access token is null or empty. Please authenticate first.");
+                }
+
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
                 var response = await httpClient.GetAsync("https://api.spotify.com/v1/me");
                 var content = await response.Content.ReadAsStringAsync();
 
@@ -186,7 +193,6 @@ namespace BlazorApp1.SpotifyServices
                 spotifyAuthUser.DisplayName = displayName;
                 spotifyAuthUser.SpotifyID = spotifyId;
 
-                //Console.WriteLine($"Name: {displayName}, ID: {spotifyId}");
             }
             catch (Exception ex)
             {
@@ -195,20 +201,31 @@ namespace BlazorApp1.SpotifyServices
 
             return spotifyAuthUser;
         }
-        public async Task<List<SpotifyPlaylist>> SpotifyGetPlaylists(string spotifyAccessToken)
+        public async Task<List<SpotifyPlaylist>> SpotifyGetPlaylists()
         {
 
             List<SpotifyPlaylist> listPlaylistItems = new List<SpotifyPlaylist>();
 
             try
             {
+                if (_TokenService.IsAccessTokenExpired)
+                {
+                    await TryRefreshAccessTokenAsync();
+                }
+
+                var accessToken = _TokenService.AccessToken;
+
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    throw new Exception("Access token is null or empty. Please authenticate first.");
+                }
 
                 string pageUrl = "https://api.spotify.com/v1/me/playlists";
                 bool bPagingComplete = false;
 
                 while (!bPagingComplete)
                 {
-                    SpotifyPlaylists spotifyPlaylists = await SpotifyPlaylistsNextRequest(spotifyAccessToken, pageUrl);
+                    SpotifyPlaylists spotifyPlaylists = await SpotifyPlaylistsNextRequest(accessToken, pageUrl);
 
                     foreach (SpotifyPlaylist playlist in spotifyPlaylists.Items)
                     {
@@ -258,28 +275,25 @@ namespace BlazorApp1.SpotifyServices
 
             return spotifyPlaylists;
         }
-        private string SpotifyShortName(string name)
-        {
-            string? shortName = null;
-
-            try
-            {
-                shortName = name.Substring(0, 20) + "...";
-                //Console.WriteLine("SpotifyShortName shortName: " + shortName);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("SpotifyShortName ex: " + ex.Message);
-            }
-            return shortName;
-        }
-        public async Task<SpotifyPlaylist> SpotifyGetPlaylist(string playlistId, string spotifyAccessToken)
+        public async Task<SpotifyPlaylist> SpotifyGetPlaylist(string playlistId)
         {
 
             SpotifyPlaylist playlist = null;
 
             try
             {
+                if (_TokenService.IsAccessTokenExpired)
+                {
+                    await TryRefreshAccessTokenAsync();
+                }
+
+                var accessToken = _TokenService.AccessToken;
+                
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    throw new Exception("Access token is null or empty. Please authenticate first.");
+                }
+
                 string playlistUrl = "https://api.spotify.com/v1/playlists/" + playlistId;
                 string queryFields = "description,id,images(url),tracks(next,total,items(track(album(name),artists(name),duration_ms,id,name)))";
 
@@ -297,11 +311,11 @@ namespace BlazorApp1.SpotifyServices
                     PlaylistTracks trackItems = null;
                     if (!nextPage)
                     {
-                        playlistResult = await SpotifyGetPlaylistsInformation(spotifyAccessToken, generatedUrl);
+                        playlistResult = await SpotifyGetPlaylistsInformation(accessToken, generatedUrl);
                     }
                     else
                     {
-                        trackItems = await SpotifyGetTrackInformation(spotifyAccessToken, generatedUrl);
+                        trackItems = await SpotifyGetTrackInformation(accessToken, generatedUrl);
                     }
 
                     if (playlist == null)
@@ -339,7 +353,10 @@ namespace BlazorApp1.SpotifyServices
 
                 foreach (TrackItem selectedTrack in playlist.Tracks.Items)
                 {
-                    selectedTrack.Track.TrackTime = SpotifyGenTrackTime(selectedTrack.Track.Duration_ms);
+                    if (selectedTrack.Track != null)
+                    {
+                        selectedTrack.Track.TrackTime = SpotifyGenTrackTime(selectedTrack.Track.Duration_ms);
+                    }
                 }
 
             }
@@ -391,16 +408,65 @@ namespace BlazorApp1.SpotifyServices
 
             return trackItem;
         }
-        private string SpotifyGenTrackTime(int ms)
+        public async Task<List<string>> SpotifyGetTrackIDs(List<CreateTrack> listTracks)
         {
-            TimeSpan t = TimeSpan.FromMilliseconds(ms);
+            List<string> listSpotifyTrackIds = new List<string>();
+            int successfulSearch = 0;
 
-            string time = $"{t.Minutes}:{t.Seconds}";
+            HttpClient httpClient = new HttpClient();
 
-            return time;
+            try
+            {
+                if (_TokenService.IsAccessTokenExpired)
+                {
+                    await TryRefreshAccessTokenAsync();
+                }
 
+                var accessToken = _TokenService.AccessToken;
+
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    throw new Exception("Access token is null or empty. Please authenticate first.");
+                }
+
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                Console.WriteLine("SpotifyGetTrackIDs number of tracks to find: " + listTracks.Count);
+
+                foreach (CreateTrack track in listTracks)
+                {
+                    string query = $"track:\"{track.Name}\" artist:${track.Artist}";
+                    var encodedQuery = Uri.EscapeDataString(query);
+
+                    var response = await httpClient.GetAsync($"https://api.spotify.com/v1/search?q={encodedQuery}&type=track&limit=1");
+
+                    var result = await response.Content.ReadAsStringAsync();
+                    SpotifyPlaylist spotifyPlaylist = JsonConvert.DeserializeObject<SpotifyPlaylist>(result);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine("SpotifyGetTrackIDs Unsuccesssful Error: " + result);
+                        continue;
+                    }
+                    else
+                    {
+                        if (spotifyPlaylist.Tracks.Items.Count > 0)
+                        {
+                            listSpotifyTrackIds.Add(spotifyPlaylist.Tracks.Items[0].Id);
+                            successfulSearch++;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("SpotifyGetTrackIDs ex: " + ex.Message);
+            }
+
+            Console.WriteLine($"SpotifyGetTrackIDs: Successfully found {successfulSearch} out of {listTracks.Count} tracks");
+            return listSpotifyTrackIds;
         }
-        public async Task<string> SpotifyCreatePlaylist(string accessToken, string playlistName)
+        public async Task<string> SpotifyCreatePlaylist(string playlistName)
         {
 
             SpotifyPlaylist spotifyPlaylist = new SpotifyPlaylist();
@@ -418,6 +484,18 @@ namespace BlazorApp1.SpotifyServices
 
             try
             {
+                if (_TokenService.IsAccessTokenExpired)
+                {
+                    await TryRefreshAccessTokenAsync();
+                }
+
+                var accessToken = _TokenService.AccessToken;
+
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    throw new Exception("Access token is null or empty. Please authenticate first.");
+                }
+
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
                 var response = await httpClient.PostAsync("https://api.spotify.com/v1/users/joval101/playlists", httpContent);
 
@@ -435,7 +513,7 @@ namespace BlazorApp1.SpotifyServices
             Console.WriteLine($"SpotifyCreatePlaylist: Playlist - {playlistName} created successfully");
             return spotifyPlaylist.Id;
         }
-        public async Task SpotifyAddTracksToPlaylist(string accessToken, List<string> tracks, string playlistId)
+        public async Task SpotifyAddTracksToPlaylist(List<string> tracks, string playlistId)
         {
             HttpClient httpClient = new HttpClient();
 
@@ -454,6 +532,18 @@ namespace BlazorApp1.SpotifyServices
 
             try
             {
+                if (_TokenService.IsAccessTokenExpired)
+                {
+                    await TryRefreshAccessTokenAsync();
+                }
+
+                var accessToken = _TokenService.AccessToken;
+
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    throw new Exception("Access token is null or empty. Please authenticate first.");
+                }
+
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
                 var response = await httpClient.PostAsync($"https://api.spotify.com/v1/playlists/{playlistId}/tracks", httpContent);
                 //Console.WriteLine(response);
@@ -464,42 +554,29 @@ namespace BlazorApp1.SpotifyServices
             }
             Console.WriteLine($"SpotifyAddTracksToPlaylist: Successfully added {tracks.Count} tracks to playlist");
         }
-        public async Task<List<string>> SpotifyGetTrackIDs(string accessToken, List<CreateTrack> listTracks)
+        private string SpotifyShortName(string name)
         {
-            List<string> listSpotifyTrackIds = new List<string>();
-            int successfulSearch = 0;
-
-            HttpClient httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            string? shortName = null;
 
             try
             {
-                Console.WriteLine("SpotifyGetTrackIDs number of tracks to find: " + listTracks.Count);
-
-                foreach(CreateTrack track in listTracks) 
-                {
-                    string query = $"track:\"{track.Name}\" artist:${track.Artist}";
-                    var encodedQuery = Uri.EscapeDataString(query);
-
-                    var response = await httpClient.GetAsync($"https://api.spotify.com/v1/search?q={encodedQuery}&type=track&limit=1");
-
-                    var result = await response.Content.ReadAsStringAsync();
-                    SpotifyPlaylist spotifyPlaylist = JsonConvert.DeserializeObject<SpotifyPlaylist>(result);
-
-                    if (spotifyPlaylist.Tracks.Items.Count > 0)
-                    {
-                        listSpotifyTrackIds.Add(spotifyPlaylist.Tracks.Items[0].Id);
-                        successfulSearch++;
-                    }
-                }
+                shortName = name.Substring(0, 20) + "...";
+                //Console.WriteLine("SpotifyShortName shortName: " + shortName);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("SpotifyGetTrackIDs ex: " + ex.Message);
+                Console.WriteLine("SpotifyShortName ex: " + ex.Message);
             }
+            return shortName;
+        }
+        private string SpotifyGenTrackTime(int ms)
+        {
+            TimeSpan t = TimeSpan.FromMilliseconds(ms);
 
-            Console.WriteLine($"SpotifyGetTrackIDs: Successfully found {successfulSearch} out of {listTracks.Count} tracks");
-            return listSpotifyTrackIds;
+            string time = $"{t.Minutes}:{t.Seconds}";
+
+            return time;
+
         }
     }
 }
