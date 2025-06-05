@@ -31,7 +31,7 @@
 
 <div>
     <div class="w3-bar" id="spotifyPlaylistsDisplay">
-    @* @if (SpotifyListPlaylists != null)
+    @if (SpotifyListPlaylists != null)
     {
         foreach (SpotifyPlaylist playlist in SpotifyListPlaylists)
         {
@@ -40,7 +40,7 @@
                 <h5 style="text-align:right"><b>@playlist.ShortName</b></h5>
             </div>
         }
-    } *@
+    }
     </div>
     
     <div id="spotifyPlaylistDisplay" style="display:none">
@@ -121,15 +121,16 @@
 
             SpotifyAuthUserData spotifyAuthUserData = await spotifyAppServices.InitSpotifyFlow(spotifyCode);
 
-            if (spotifyAuthUserData == null) { AuthorizeSpotify(); }
-            else
+             if (spotifyAuthUserData == null) { AuthorizeSpotify(); }
+             else
             {
-                //SpotifyAuthUser = spotifyAuthUserData.SpotifyAuthUser;
+                SpotifyAuthUser = spotifyAuthUserData.SpotifyAuthUser;
                 //SpotifyListPlaylists = spotifyAuthUserData.ListSpotifyPlaylists;
                 bFoundUser = true;
-                //StateHasChanged();
+                StateHasChanged();
+                //string user = JsonConvert.SerializeObject(spotifyAuthUserData);
 
-                await JSRuntime.InvokeVoidAsync("populatePlaylists", JsonConvert.SerializeObject(spotifyAuthUserData));
+                //await JSRuntime.InvokeVoidAsync("populatePlaylists", user);
             }
         }
     }
@@ -159,10 +160,13 @@
     }
     private async Task AuthorizeSignOut()
     {
+        Console.WriteLine(TokenService.AccessToken);
         string signoutUrl = "https://accounts.spotify.com/logout/";
         //Open new tab to signout
-        await JSRuntime.InvokeVoidAsync("open", signoutUrl, "_blank");
         await RemoveToken();
+        Console.WriteLine(TokenService.AccessToken);
+        await JSRuntime.InvokeVoidAsync("open", signoutUrl, "_blank");
+        
         //Call JS function
         await JSRuntime.InvokeVoidAsync("navigate", "");
 
