@@ -11,48 +11,48 @@
         document.getElementById("btn_CreatePlaylist").style.display = "none";
     }
 }
-function populatePlaylists(authUserData) {
+//function populatePlaylists(authUserData) {
 
-    const obj = JSON.parse(authUserData);
-    const spotifyPlaylistsDisplay = document.getElementById("spotifyPlaylistsDisplay");
+//    const obj = JSON.parse(authUserData);
+//    const spotifyPlaylistsDisplay = document.getElementById("spotifyPlaylistsDisplay");
 
-    document.getElementById("user_id").innerText = obj.SpotifyAuthUser.DisplayName;
+//    document.getElementById("user_id").innerText = obj.SpotifyAuthUser.DisplayName;
 
-    if (obj.ListSpotifyPlaylists.Playlists.length == 0) {
-        return;
-    }
+//    if (obj.ListSpotifyPlaylists.Playlists.length == 0) {
+//        return;
+//    }
 
-    for (let index in obj.ListSpotifyPlaylists.Playlists) {
+//    for (let index in obj.ListSpotifyPlaylists.Playlists) {
 
-        let elm_Div = document.createElement("div");
-        let elm_Img = document.createElement("img");
-        let elm_H5 = document.createElement("h5");
-        let elm_B = document.createElement("b");
+//        let elm_Div = document.createElement("div");
+//        let elm_Img = document.createElement("img");
+//        let elm_H5 = document.createElement("h5");
+//        let elm_B = document.createElement("b");
 
-        elm_Div.classList.add("w3-card");
-        elm_Div.classList.add("w3-bar-item");
-        elm_Div.classList.add("w3-round-xlarge");
-        elm_Div.setAttribute("onclick", `@OpenPlaylist(${obj.ListSpotifyPlaylists.Playlists[index].Id}, ${obj.ListSpotifyPlaylists.Playlists[index].Name})`);
-        elm_Div.style.paddingTop = "16px";
-        elm_Div.style.margin = "8px";
-        elm_Div.style.cursor = "pointer";
+//        elm_Div.classList.add("w3-card");
+//        elm_Div.classList.add("w3-bar-item");
+//        elm_Div.classList.add("w3-round-xlarge");
+//        elm_Div.setAttribute("onclick", `@OpenPlaylist(${obj.ListSpotifyPlaylists.Playlists[index].Id}, ${obj.ListSpotifyPlaylists.Playlists[index].Name})`);
+//        elm_Div.style.paddingTop = "16px";
+//        elm_Div.style.margin = "8px";
+//        elm_Div.style.cursor = "pointer";
 
-        elm_Img.classList.add("w3-round-large");
-        if (obj.ListSpotifyPlaylists.Playlists[index].Images != null) {
-            elm_Img.src = obj.ListSpotifyPlaylists.Playlists[index].Images[0].Url;
-        }
-        elm_Img.style.width = "200px";
-        elm_Img.style.height = "200px";
+//        elm_Img.classList.add("w3-round-large");
+//        if (obj.ListSpotifyPlaylists.Playlists[index].Images != null) {
+//            elm_Img.src = obj.ListSpotifyPlaylists.Playlists[index].Images[0].Url;
+//        }
+//        elm_Img.style.width = "200px";
+//        elm_Img.style.height = "200px";
 
-        elm_H5.style.textAlign = "right";
-        elm_B.innerText = obj.ListSpotifyPlaylists.Playlists[index].Name;
+//        elm_H5.style.textAlign = "right";
+//        elm_B.innerText = obj.ListSpotifyPlaylists.Playlists[index].Name;
 
-        elm_H5.appendChild(elm_B);
-        elm_Div.appendChild(elm_Img);
-        elm_Div.appendChild(elm_H5);
-        spotifyPlaylistsDisplay.appendChild(elm_Div);
-    }
-}
+//        elm_H5.appendChild(elm_B);
+//        elm_Div.appendChild(elm_Img);
+//        elm_Div.appendChild(elm_H5);
+//        spotifyPlaylistsDisplay.appendChild(elm_Div);
+//    }
+//}
 function spotifySetSearchDisplay(jsonDataUser, jsonListPlaylists) {
 
     spotifyDisplayUserInfo(jsonDataUser);

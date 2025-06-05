@@ -31,11 +31,14 @@ namespace BlazorApp1.SpotifyServices
         {
             string? spotifyAuthUrl = null;
             string spotifyAuthAddress = "https://accounts.spotify.com/authorize";
-            string nUri = "https://localhost:7262/playlists";
+            //string nUri = "https://localhost:7262/playlists";
+            string nUri = "https://mustang-romantic-rightly.ngrok-free.app/playlists";
+        
             if (!ToPlaylists) {
                 nUri = "https://localhost:7262/playlistgenerator";
             }
-            
+
+            Console.WriteLine("clientID: " + _Configuration["SpotifyWeb:ClientId"]);
             try
             {
                 spotifyAuthUrl = $"{spotifyAuthAddress}?client_id={_Configuration["SpotifyWeb:ClientId"]}&response_type=code&redirect_uri={Uri.EscapeDataString(nUri)}&scope={Uri.EscapeDataString(_Configuration["SpotifyWeb:Scopes"])}";
@@ -120,14 +123,15 @@ namespace BlazorApp1.SpotifyServices
 
                     await _JSRunTime.InvokeVoidAsync("displayNavigation");
                     SpotifyAuthUser spotifyAuthUser = await SpotifyGetProfile();
-                    List<SpotifyPlaylist>? spotifyListPlaylists = await SpotifyGetPlaylists();
+                    //await Task.Delay(30000);
+                    //List<SpotifyPlaylist>? spotifyListPlaylists = await SpotifyGetPlaylists();
 
                     if (spotifyAuthUser != null)
                     {
                         spotifyAuthUserData = new SpotifyAuthUserData();
 
                         spotifyAuthUserData.SpotifyAuthUser = spotifyAuthUser;
-                        spotifyAuthUserData.ListSpotifyPlaylists = spotifyListPlaylists;
+                        //spotifyAuthUserData.ListSpotifyPlaylists = spotifyListPlaylists;
 
                         Console.WriteLine("InitSpotifyFlow Found user successfully: displayname - " + spotifyAuthUser.DisplayName);
                     }
@@ -180,7 +184,7 @@ namespace BlazorApp1.SpotifyServices
                 {
                     throw new Exception("Access token is null or empty. Please authenticate first.");
                 }
-
+                await Task.Delay(10000);
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
                 var response = await httpClient.GetAsync("https://api.spotify.com/v1/me");
                 var content = await response.Content.ReadAsStringAsync();
@@ -225,6 +229,7 @@ namespace BlazorApp1.SpotifyServices
 
                 while (!bPagingComplete)
                 {
+                    await Task.Delay(30000);
                     SpotifyPlaylists spotifyPlaylists = await SpotifyPlaylistsNextRequest(accessToken, pageUrl);
 
                     foreach (SpotifyPlaylist playlist in spotifyPlaylists.Items)
@@ -257,7 +262,7 @@ namespace BlazorApp1.SpotifyServices
         //Request next page
         public async Task<SpotifyPlaylists> SpotifyPlaylistsNextRequest(string accessToken, string pageUrl)
         {
-
+            await Task.Delay(15000);
             SpotifyPlaylists spotifyPlaylists = new SpotifyPlaylists();
 
             HttpClient httpClient = new HttpClient();
