@@ -32,18 +32,16 @@ namespace BlazorApp1.SpotifyServices
         {
             string? spotifyAuthUrl = null;
             string spotifyAuthAddress = "https://accounts.spotify.com/authorize";
-            //string nUri = "https://localhost:7262/playlists";
-            //string nUri = "https://6c41-2001-ac8-8a-5000-e40c-f325-5e67-fb6.ngrok-free.app/playlists";
-            //string nUri = "https://5a54-2001-ac8-8a-5000-e40c-f325-5e67-fb6.ngrok-free.app/playlists";
-            string nUri = "https://mustang-romantic-rightly.ngrok-free.app/playlists";
+            string redirectUri = _Configuration["SpotifyWeb:RedirectUri"];
+            
             if (!ToPlaylists) {
-                nUri = "https://localhost:7262/playlistgenerator";
+                redirectUri = _Configuration["SpotifyWeb:RedirectUriPlaylistGen"];
             }
 
             Console.WriteLine("clientID: " + _Configuration["SpotifyWeb:ClientId"]);
             try
             {
-                spotifyAuthUrl = $"{spotifyAuthAddress}?client_id={_Configuration["SpotifyWeb:ClientId"]}&response_type=code&redirect_uri={Uri.EscapeDataString(nUri)}&scope={Uri.EscapeDataString(_Configuration["SpotifyWeb:Scopes"])}";
+                spotifyAuthUrl = $"{spotifyAuthAddress}?client_id={_Configuration["SpotifyWeb:ClientId"]}&response_type=code&redirect_uri={Uri.EscapeDataString(redirectUri)}&scope={Uri.EscapeDataString(_Configuration["SpotifyWeb:Scopes"])}";
             }
             catch (Exception ex)
             {
@@ -54,8 +52,8 @@ namespace BlazorApp1.SpotifyServices
         }
         public async Task ExchangeCodeForToken(string code, bool ToPlaylists)
         {
-            string redirectURI = _Configuration["SpotifyWeb:RedirectUri"];
-            if (!ToPlaylists) { redirectURI = _Configuration["SpotifyWeb:RedirectUriTwo"]; }
+            string redirectUri = _Configuration["SpotifyWeb:RedirectUri"];
+            if (!ToPlaylists) { redirectUri = _Configuration["SpotifyWeb:RedirectUriPlaylistGen"]; }
             try
             {
 
@@ -65,7 +63,7 @@ namespace BlazorApp1.SpotifyServices
                 {
                     new KeyValuePair<string, string>("grant_type", "authorization_code"),
                     new KeyValuePair<string, string>("code", code),
-                    new KeyValuePair<string, string>("redirect_uri", redirectURI),
+                    new KeyValuePair<string, string>("redirect_uri", redirectUri),
                     new KeyValuePair<string, string>("client_id", _Configuration["SpotifyWeb:ClientId"]),
                     new KeyValuePair<string, string>("client_secret", _Configuration["SpotifyWeb:ClientSecret"]),
                 });
@@ -114,11 +112,11 @@ namespace BlazorApp1.SpotifyServices
             HttpClient client,
             string url,
             HttpMethod method,
-            HttpContent content = null,
-            int maxRetries = 3,
-            int baseDelay = 3000)
+            HttpContent content = null)
+            //int maxRetries = 3,
+            //int baseDelay = 3000)
             {
-            int currentRetry = 0;
+            //int currentRetry = 0;
             while (true)
             {
                 var request = new HttpRequestMessage(method, url);
@@ -129,26 +127,22 @@ namespace BlazorApp1.SpotifyServices
 
                 var response = await client.SendAsync(request);
 
-                //if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-                //{
-
-                //var response = await sendRequest();
-
                 if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
-                    if (currentRetry <= maxRetries)
-                    {
-                        throw new Exception("Maximum retry attempts reached due to rate limiting");
-                    }
-                    int delayMs = baseDelay * (int)Math.Pow(2, currentRetry);
+                    //if (currentRetry <= maxRetries)
+                    //{
+                    //    throw new Exception("Maximum retry attempts reached due to rate limiting");
+                    //}
+                    //int delayMs = baseDelay * (int)Math.Pow(2, currentRetry);
                     if (response.Headers.TryGetValues("Retry-After", out var values) &&
                         int.TryParse(values.FirstOrDefault(), out int retryAfter))
                     {
-                        delayMs = retryAfter * 1000;
+                        throw new Exception($"Error too many requests made to '{url}', Retry-After: {retryAfter}.");
+                        //delayMs = retryAfter * 1000;
                     }
-                    Console.WriteLine($"Rate limited. Waiting {delayMs}ms before retrying.");
-                    await Task.Delay(delayMs);
-                    currentRetry++;
+                    //Console.WriteLine($"Rate limited. Waiting {delayMs}ms before retrying.");
+                    //await Task.Delay(delayMs);
+                    //currentRetry++;
                     continue;
                 }
                 return response;
