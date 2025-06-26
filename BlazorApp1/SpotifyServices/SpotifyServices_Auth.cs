@@ -110,12 +110,29 @@ namespace BlazorApp1.SpotifyServices
             _TokenService.SetTokens(accessToken, expiresIn, null); // Don't overwrite refresh token
             return true;
         }
-        private async Task<HttpResponseMessage> SendWithRateLimitRetryAsync(Func<Task<HttpResponseMessage>> sendRequest, int maxRetries = 3, int baseDelay = 3000)
-        {
+        public async Task<HttpResponseMessage> SendWithRateLimitRetryAsync(
+            HttpClient client,
+            string url,
+            HttpMethod method,
+            HttpContent content = null,
+            int maxRetries = 3,
+            int baseDelay = 3000)
+            {
             int currentRetry = 0;
             while (true)
             {
-                var response = await sendRequest();
+                var request = new HttpRequestMessage(method, url);
+                if (content != null && method == HttpMethod.Post)
+                {
+                    request.Content = content;
+                }
+
+                var response = await client.SendAsync(request);
+
+                //if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                //{
+
+                //var response = await sendRequest();
 
                 if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
@@ -127,7 +144,7 @@ namespace BlazorApp1.SpotifyServices
                     if (response.Headers.TryGetValues("Retry-After", out var values) &&
                         int.TryParse(values.FirstOrDefault(), out int retryAfter))
                     {
-                        delayMs = retryAfter * 1000; // Convert to milliseconds
+                        delayMs = retryAfter * 1000;
                     }
                     Console.WriteLine($"Rate limited. Waiting {delayMs}ms before retrying.");
                     await Task.Delay(delayMs);
@@ -152,17 +169,14 @@ namespace BlazorApp1.SpotifyServices
 
                     await _JSRunTime.InvokeVoidAsync("displayNavigation");
                     SpotifyAuthUser spotifyAuthUser = await SpotifyGetProfile();
-                    //await Task.Delay(30000);
-                    //List<SpotifyPlaylist>? spotifyListPlaylists = await SpotifyGetPlaylists();
+                    List<SpotifyPlaylist>? spotifyListPlaylists = await SpotifyGetPlaylists();
 
                     if (spotifyAuthUser != null)
                     {
                         spotifyAuthUserData = new SpotifyAuthUserData();
 
                         spotifyAuthUserData.SpotifyAuthUser = spotifyAuthUser;
-                        //spotifyAuthUserData.ListSpotifyPlaylists = spotifyListPlaylists;
-
-                        Console.WriteLine("InitSpotifyFlow Found user successfully: displayname - " + spotifyAuthUser.DisplayName);
+                        spotifyAuthUserData.ListSpotifyPlaylists = spotifyListPlaylists;
                     }
                 }
             }
@@ -197,78 +211,39 @@ namespace BlazorApp1.SpotifyServices
         {
 
             SpotifyAuthUser spotifyAuthUser = new SpotifyAuthUser();
-            //int maxRetries = 3;
-            //int currentRetry = 0;
-            //int baseDelay = 3000;
-
-            //using (HttpClient client = new HttpClient())
-            //{
-
-                HttpClient httpClient = new HttpClient();
-                try
+            HttpClient httpClient = new HttpClient();
+            
+            try
+            {
+                if (_TokenService.IsAccessTokenExpired)
                 {
-                    if (_TokenService.IsAccessTokenExpired)
-                    {
-                        await TryRefreshAccessTokenAsync();
-                    }
-
-                    var accessToken = _TokenService.AccessToken;
-
-                    if (string.IsNullOrEmpty(accessToken))
-                    {
-                        throw new Exception("Access token is null or empty. Please authenticate first.");
-                    }
-                    //await Task.Delay(10000);
-                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                    var response = await SendWithRateLimitRetryAsync(() => httpClient.GetAsync("https://api.spotify.com/v1/me"));
-                    //while (currentRetry < maxRetries)
-                    //{
-                    //response = await httpClient.GetAsync("https://api.spotify.com/v1/me");
-
-                        //if (response.IsSuccessStatusCode)
-                        //{
-                    var content = await response.Content.ReadAsStringAsync();
-                    var profile = JsonDocument.Parse(content).RootElement;
-
-                    spotifyAuthUser.DisplayName = profile.GetProperty("display_name").GetString();
-                    spotifyAuthUser.SpotifyID = profile.GetProperty("id").GetString();
-                    //        break;
-                    //    }
-                    //    else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-                    //    {
-                    //        if (response.Headers.TryGetValues("retry-after", out var values) &&
-                    //            int.TryParse(values.FirstOrDefault(), out int retryAfter))
-                    //        {
-                    //            // Use the server-provided retry delay
-                    //            Console.WriteLine($"Rate limited. Waiting {retryAfter} seconds before retry.");
-                    //            await Task.Delay(retryAfter * 1000);
-                    //        }
-                    //        else
-                    //        {
-                    //            // Exponential backoff if no Retry-After header
-                    //            int delay = baseDelay * (int)Math.Pow(2, currentRetry);
-                    //            Console.WriteLine($"Rate limited. Using exponential backoff: {delay}ms");
-                    //            await Task.Delay(delay);
-                    //        }
-                    //        currentRetry++;
-                    //    }
-                    //    else
-                    //    {
-                    //        var errorContent = await response.Content.ReadAsStringAsync();
-                    //        throw new HttpRequestException(
-                    //            $"Spotify API request failed: {response.StatusCode}, {errorContent}");
-                    //    }
-                    //}
-                    //if (currentRetry == maxRetries)
-                    //{
-                    //    throw new Exception("Maximum retry attempts reached when calling Spotify API");
-                    //}
+                    await TryRefreshAccessTokenAsync();
                 }
-                catch (Exception ex)
+
+                var accessToken = _TokenService.AccessToken;
+
+                if (string.IsNullOrEmpty(accessToken))
                 {
-                    Console.WriteLine("SpotifyGetProfile Ex: " + ex.Message);
+                    throw new Exception("Access token is null or empty. Please authenticate first.");
                 }
-            //}
+
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                var response = await SendWithRateLimitRetryAsync(httpClient,
+                    "https://api.spotify.com/v1/me",
+                    HttpMethod.Get
+                    );
+
+                var content = await response.Content.ReadAsStringAsync();
+                var profile = JsonDocument.Parse(content).RootElement;
+
+                spotifyAuthUser.DisplayName = profile.GetProperty("display_name").GetString();
+                spotifyAuthUser.SpotifyID = profile.GetProperty("id").GetString();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("SpotifyGetProfile Ex: " + ex.Message);
+            }
+            
             return spotifyAuthUser;
         }
         public async Task<List<SpotifyPlaylist>> SpotifyGetPlaylists()
@@ -295,7 +270,7 @@ namespace BlazorApp1.SpotifyServices
 
                 while (!bPagingComplete)
                 {
-                    await Task.Delay(30000);
+                    //await Task.Delay(30000);
                     SpotifyPlaylists spotifyPlaylists = await SpotifyPlaylistsNextRequest(accessToken, pageUrl);
 
                     foreach (SpotifyPlaylist playlist in spotifyPlaylists.Items)
@@ -328,14 +303,18 @@ namespace BlazorApp1.SpotifyServices
         //Request next page
         public async Task<SpotifyPlaylists> SpotifyPlaylistsNextRequest(string accessToken, string pageUrl)
         {
-            await Task.Delay(15000);
-            SpotifyPlaylists spotifyPlaylists = new SpotifyPlaylists();
 
+            SpotifyPlaylists spotifyPlaylists = new SpotifyPlaylists();
             HttpClient httpClient = new HttpClient();
             try
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                var response = await httpClient.GetAsync(pageUrl);
+                var response = await SendWithRateLimitRetryAsync(
+                    httpClient,
+                    pageUrl,
+                    HttpMethod.Get
+                    );
+                
                 var content = await response.Content.ReadAsStringAsync();
                 spotifyPlaylists = JsonConvert.DeserializeObject<SpotifyPlaylists>(content);
             }
@@ -442,13 +421,16 @@ namespace BlazorApp1.SpotifyServices
         {
 
             SpotifyPlaylist spotifyPlaylist = new SpotifyPlaylist();
-
             HttpClient httpClient = new HttpClient();
 
             try
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                var response = await httpClient.GetAsync(pageUrl);
+                var response = await SendWithRateLimitRetryAsync(
+                    httpClient,
+                    pageUrl,
+                    HttpMethod.Get
+                    );
                 var content = await response.Content.ReadAsStringAsync();
                 spotifyPlaylist = JsonConvert.DeserializeObject<SpotifyPlaylist>(content);
             }
@@ -468,7 +450,11 @@ namespace BlazorApp1.SpotifyServices
             try
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                var response = await httpClient.GetAsync(pageUrl);
+                var response = await SendWithRateLimitRetryAsync(
+                    httpClient,
+                    pageUrl,
+                    HttpMethod.Get
+                );
                 var content = await response.Content.ReadAsStringAsync();
                 trackItem = JsonConvert.DeserializeObject<PlaylistTracks>(content);
             }
@@ -509,8 +495,12 @@ namespace BlazorApp1.SpotifyServices
                     string query = $"track:\"{track.Name}\" artist:${track.Artist}";
                     var encodedQuery = Uri.EscapeDataString(query);
 
-                    var response = await httpClient.GetAsync($"https://api.spotify.com/v1/search?q={encodedQuery}&type=track&limit=1");
-
+                    //var response = await httpClient.GetAsync($"https://api.spotify.com/v1/search?q={encodedQuery}&type=track&limit=1");
+                    var response = await SendWithRateLimitRetryAsync(
+                        httpClient,
+                        $"https://api.spotify.com/v1/search?q={encodedQuery}&type=track&limit=1",
+                        HttpMethod.Get
+                    );
                     var result = await response.Content.ReadAsStringAsync();
                     SpotifyPlaylist spotifyPlaylist = JsonConvert.DeserializeObject<SpotifyPlaylist>(result);
 
@@ -568,7 +558,13 @@ namespace BlazorApp1.SpotifyServices
                 }
 
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                var response = await httpClient.PostAsync("https://api.spotify.com/v1/users/joval101/playlists", httpContent);
+                var response = await SendWithRateLimitRetryAsync(
+                    httpClient,
+                    "https://api.spotify.com/v1/users/joval101/playlists",
+                    HttpMethod.Post,
+                    httpContent
+                    );
+                    //await httpClient.PostAsync("https://api.spotify.com/v1/users/joval101/playlists", httpContent);
 
                 string result = await response.Content.ReadAsStringAsync();
                 //Console.WriteLine(result);
@@ -616,7 +612,14 @@ namespace BlazorApp1.SpotifyServices
                 }
 
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                var response = await httpClient.PostAsync($"https://api.spotify.com/v1/playlists/{playlistId}/tracks", httpContent);
+                var response = await SendWithRateLimitRetryAsync(
+                    httpClient,
+                    $"https://api.spotify.com/v1/playlists/{playlistId}/tracks",
+                    HttpMethod.Post,
+                    httpContent
+                );
+                    
+                    //await httpClient.PostAsync($"https://api.spotify.com/v1/playlists/{playlistId}/tracks", httpContent);
                 //Console.WriteLine(response);
             }
             catch (Exception ex)
