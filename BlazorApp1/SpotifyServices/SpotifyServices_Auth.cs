@@ -17,12 +17,14 @@ namespace BlazorApp1.SpotifyServices
 {
     public partial class SpotifyAppServices
     {
+        private readonly HttpClient _httpClient;
         public IConfiguration _Configuration;
         public IJSRuntime _JSRunTime;
         public SpotifyServicess_TokenService _TokenService;
 
         public SpotifyAppServices(IConfiguration configuration, IJSRuntime jsRuntime, SpotifyServicess_TokenService tokenService)
         {
+            _httpClient = new HttpClient();
             _Configuration = configuration;
             _JSRunTime = jsRuntime;
             _TokenService = tokenService;
@@ -112,12 +114,12 @@ namespace BlazorApp1.SpotifyServices
             HttpClient client,
             string url,
             HttpMethod method,
-            HttpContent content = null)
-            //int maxRetries = 3,
+            HttpContent content = null,
+            int maxRetries = 3)
             //int baseDelay = 3000)
             {
-            //int currentRetry = 0;
-            while (true)
+            int currentRetry = 0;
+            while (currentRetry <= maxRetries)
             {
                 var request = new HttpRequestMessage(method, url);
                 if (content != null && method == HttpMethod.Post)
@@ -129,24 +131,30 @@ namespace BlazorApp1.SpotifyServices
 
                 if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
-                    //if (currentRetry <= maxRetries)
-                    //{
-                    //    throw new Exception("Maximum retry attempts reached due to rate limiting");
-                    //}
-                    //int delayMs = baseDelay * (int)Math.Pow(2, currentRetry);
+                    if (currentRetry <= maxRetries)
+                    {
+                        throw new Exception("Maximum retry attempts reached due to rate limiting");
+                    }
+                    int delaySeconds = 1;
                     if (response.Headers.TryGetValues("Retry-After", out var values) &&
                         int.TryParse(values.FirstOrDefault(), out int retryAfter))
                     {
-                        throw new Exception($"Error too many requests made to '{url}', Retry-After: {retryAfter}.");
+                        delaySeconds = retryAfter;
+                        //throw new Exception($"Error too many requests made to '{url}', Retry-After: {retryAfter}.");
                         //delayMs = retryAfter * 1000;
                     }
-                    //Console.WriteLine($"Rate limited. Waiting {delayMs}ms before retrying.");
-                    //await Task.Delay(delayMs);
-                    //currentRetry++;
-                    continue;
+                    else
+                    {
+                        delaySeconds = (int)Math.Pow(2, currentRetry);
+                    }
+                        Console.WriteLine($"Rate limited. Waiting {delaySeconds}s before retry {currentRetry + 1}/{maxRetries}");
+                        await Task.Delay(delaySeconds * 1000);
+                        currentRetry++;
+                        continue;
                 }
                 return response;
             }
+            throw new Exception("Unexpected end of retry loop");
         }
         public async Task<SpotifyAuthUserData> InitSpotifyFlow(string SpotifyCode)
         {
@@ -576,20 +584,21 @@ namespace BlazorApp1.SpotifyServices
         }
         public async Task SpotifyAddTracksToPlaylist(List<string> tracks, string playlistId)
         {
-            HttpClient httpClient = new HttpClient();
+            const int batchSize = 100;
+            //HttpClient httpClient = new HttpClient();
 
-            List<string> trackUris = new List<string>();
+            //List<string> trackUris = new List<string>();
 
-            foreach (string track in tracks)
-            {
-                trackUris.Add("spotify:track:" + track);
-            }
+            //foreach (string track in tracks)
+            //{
+             //   trackUris.Add("spotify:track:" + track);
+            //}
 
             // Build JSON payload
-            var payload = new { uris = trackUris };
-            string json = System.Text.Json.JsonSerializer.Serialize(payload);
+            //var payload = new { uris = trackUris };
+            //string json = System.Text.Json.JsonSerializer.Serialize(payload);
 
-            var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+            //var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
             try
             {
@@ -605,22 +614,44 @@ namespace BlazorApp1.SpotifyServices
                     throw new Exception("Access token is null or empty. Please authenticate first.");
                 }
 
-                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                var response = await SendWithRateLimitRetryAsync(
-                    httpClient,
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                
+                for (int i = 0; i < tracks.Count; i += batchSize)
+                {
+                    var batchTracks = tracks.Skip(i).Take(batchSize)
+                        .Select(t => "spotify:track:" + t)
+                        .ToList();
+
+                    var payload = new { uris = batchTracks };
+                    string json = System.Text.Json.JsonSerializer.Serialize(payload);
+                    var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+
+                    var response = await SendWithRateLimitRetryAsync(
+                    _httpClient,
                     $"https://api.spotify.com/v1/playlists/{playlistId}/tracks",
                     HttpMethod.Post,
                     httpContent
                 );
-                    
-                    //await httpClient.PostAsync($"https://api.spotify.com/v1/playlists/{playlistId}/tracks", httpContent);
-                //Console.WriteLine(response);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new Exception($"Failed to add tracks. Status: {response.StatusCode}");
+                    }
+
+                    // Add delay between batches to respect rate limits
+                    if (i + batchSize < tracks.Count)
+                    {
+                        await Task.Delay(1000); // 1 second delay between batches
+                    }
+                }
+                
             }
             catch (Exception ex)
             {
                 Console.WriteLine("SpotifyAddTracksToPlaylist ex: " + ex.Message);
+                throw;
             }
-            Console.WriteLine($"SpotifyAddTracksToPlaylist: Successfully added {tracks.Count} tracks to playlist");
+            //Console.WriteLine($"SpotifyAddTracksToPlaylist: Successfully added {tracks.Count} tracks to playlist");
         }
         private string SpotifyShortName(string name)
         {
