@@ -36,7 +36,10 @@
         foreach (SpotifyPlaylist playlist in SpotifyListPlaylists)
         {
             <div class="w3-card w3-bar-item w3-round-xlarge" @onclick="() => OpenPlaylist(playlist.Id, playlist.Name)" style="padding-top:16px;margin:8px;cursor:pointer">
-                <img class="w3-round-large" style="width:200px;height:200px" src="@playlist.Images[0].Url" />
+                @if (playlist.Images != null && playlist.Images.Count > 0)
+                {
+                    <img class="w3-round-large" style="width:200px;height:200px" src="@playlist.Images[0].Url" />
+                }
                 <h5 style="text-align:right"><b>@playlist.ShortName</b></h5>
             </div>
         }
@@ -231,6 +234,12 @@
 
             SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime, TokenService);
             List<string> listSpotifyTrackIds = await spotifyAppServices.SpotifyGetTrackIDs(listTracks);
+
+            if (listSpotifyTrackIds.Count == 0)
+            {
+                Console.WriteLine("CreatePlaylist: No tracks found to add to playlist");
+                return;
+            }
 
             string playlistId = await spotifyAppServices.SpotifyCreatePlaylist(PlaylistNameText);
 
