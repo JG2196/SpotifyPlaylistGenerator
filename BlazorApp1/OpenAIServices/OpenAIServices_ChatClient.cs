@@ -1,4 +1,5 @@
-﻿using Microsoft.JSInterop;
+﻿using BlazorApp1.Data;
+using Microsoft.JSInterop;
 using Newtonsoft.Json;
 using OpenAI.Chat;
 using System.Text;
@@ -48,9 +49,9 @@ namespace BlazorApp1.OpenAIServices
             _Configuration = configuration;
         }
 
-        public async Task<string> OpenAISubmitQuery(string prompt)
+        public async Task<OpenAIPlaylist?> OpenAISubmitQuery(string prompt)
         {
-            string? resultString = string.Empty;
+            OpenAIPlaylist? openAIPlaylist = null;
             try
             {
                 string endpoint = "https://api.openai.com/v1/chat/completions";
@@ -75,13 +76,24 @@ namespace BlazorApp1.OpenAIServices
 
                 dynamic result = JsonConvert.DeserializeObject(responseString);
 
-                resultString = OpenAIExtractJsonFromResponse(result.choices[0].message.content.ToString());
+                string? resultString = OpenAIExtractJsonFromResponse(result.choices[0].message.content.ToString());
+
+                if (!string.IsNullOrEmpty(resultString))
+                {
+                    openAIPlaylist = JsonConvert.DeserializeObject<OpenAIPlaylist>(resultString);
+                }
+
+                if (openAIPlaylist.Playlist.Count < 15)
+                {
+                    openAIPlaylist = null; // Ensure at least 15 tracks
+                }
+                
             }
             catch (Exception ex)
             {
                 Console.WriteLine("OpenAISubmitQuery ex: " + ex.Message);
             }
-            return resultString;
+            return openAIPlaylist;
         }
 
         // OpenAi JSON response contains ```
@@ -102,6 +114,10 @@ namespace BlazorApp1.OpenAIServices
                 return match.Groups[1].Value;
             }
 
+            if (!match.Success)
+            {
+                return null;
+            }
             // If no match is found, return original string (may cause deserialize errors)
             return response;
         }

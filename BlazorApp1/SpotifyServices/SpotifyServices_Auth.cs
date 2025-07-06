@@ -451,11 +451,11 @@ namespace BlazorApp1.SpotifyServices
 
             return trackItem;
         }
-        public async Task<List<string>> SpotifyGetTrackIDs(List<CreateTrack> listTracks)
+        public async Task<List<OpenAITrack>> SpotifyGetTrackIDs(List<OpenAITrack> listTracks)
         {
-            List<string> listSpotifyTrackIds = new List<string>();
+            //List<string> listSpotifyTrackIds = new List<string>();
             int successfulSearch = 0;
-
+            List<OpenAITrack> listTracksToRemove = new List<OpenAITrack>();
             try
             {
                 if (_TokenService.IsAccessTokenExpired)
@@ -473,10 +473,10 @@ namespace BlazorApp1.SpotifyServices
 
                 Console.WriteLine("SpotifyGetTrackIDs number of tracks to find: " + listTracks.Count);
 
-                foreach (var track in listTracks)
+                foreach (OpenAITrack track in listTracks)
                 {
                     // Create a more focused search query for better matching
-                    var query = $"track:\"{Uri.EscapeDataString(track.Name)}\" artist:\"{Uri.EscapeDataString(track.Artist)}\"";
+                    var query = $"track:\"{Uri.EscapeDataString(track.Title)}\" artist:\"{Uri.EscapeDataString(track.Artist)}\"";
 
                     var response = await SendWithRateLimitRetryAsync(
                         _httpClient,
@@ -494,19 +494,28 @@ namespace BlazorApp1.SpotifyServices
                             var trackId = spotifyPlaylist.Tracks.Items.FirstOrDefault()?.Id;
                             if (!string.IsNullOrEmpty(trackId))
                             {
-                                listSpotifyTrackIds.Add(trackId);
+                                track.Spotify_Id = trackId;
                                 successfulSearch++;
                             }
+                        }
+                        else
+                        {
+                            listTracksToRemove.Add(track);
                         }
                     }
                     else
                     {
                         var error = await response.Content.ReadAsStringAsync();
-                        Console.WriteLine($"SpotifyGetTrackIDs Search Error: {error}");
+                        Console.WriteLine($"SpotifyGetTrackIDs Search Error: {error}. Title: {track.Title}, Artist: {track.Artist}.");
                     }
 
                     // Add a small delay between requests to respect rate limits
                     await Task.Delay(100);
+                }
+
+                foreach (OpenAITrack track in listTracksToRemove)
+                {
+                    listTracks.Remove(track);
                 }
             }
             catch (Exception ex)
@@ -514,8 +523,8 @@ namespace BlazorApp1.SpotifyServices
                 Console.WriteLine("SpotifyGetTrackIDs ex: " + ex.Message);
             }
 
-            Console.WriteLine($"SpotifyGetTrackIDs: Successfully found {successfulSearch} out of {listTracks.Count} tracks");
-            return listSpotifyTrackIds;
+            Console.WriteLine($"SpotifyGetTrackIDs: Successfully found {successfulSearch} tracks");
+            return listTracks;
         }
         public async Task<string> SpotifyCreatePlaylist(string playlistName)
         {
