@@ -85,8 +85,7 @@
         <input id="input_Prompt" @bind="PromptText" placeholder="Enter text here" style="width:400px" />
 
         <button @onclick="SubmitPrompt">Submit</button>
-        @* <button id="btn_CreatePlaylist" @onclick="CreatePlaylist" style="display:none">Create Playlist</button> *@
-        <button id="btn_CreatePlaylist" style="display:none">Create Playlist</button>
+        <button id="btn_CreatePlaylist" @onclick="CreatePlaylist" style="display:none">Create Playlist</button>
     </div>
     <div class="w3-center" id="display_Loading" style="display:none">
         <h1>Loading</h1>
@@ -232,36 +231,35 @@
         }
 
     }
-    // private async void CreatePlaylist()
-    // {
-    //     try
-    //     {
-    //         string result = await JSRuntime.InvokeAsync<string>("getTracks"); ;
+    private async void CreatePlaylist()
+    {
+        try
+        {
+            string result = await JSRuntime.InvokeAsync<string>("getTracks"); ;
 
-    //         List<CreateTrack> listTracks;
-    //         listTracks = JsonConvert.DeserializeObject<List<CreateTrack>>(result);
+            List<string> listSpotifyTrackIds;
+            listSpotifyTrackIds = JsonConvert.DeserializeObject<List<string>>(result);
 
-    //         CreatePlaylist createPlaylist = new CreatePlaylist();
+            CreatePlaylist createPlaylist = new CreatePlaylist();
 
-    //         SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime, TokenService);
-    //         List<string> listSpotifyTrackIds = await spotifyAppServices.SpotifyGetTrackIDs(listTracks);
+            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime, TokenService);
 
-    //         if (listSpotifyTrackIds.Count == 0)
-    //         {
-    //             Console.WriteLine("CreatePlaylist: No tracks found to add to playlist");
-    //             return;
-    //         }
+            if (listSpotifyTrackIds.Count == 0)
+            {
+                Console.WriteLine("CreatePlaylist: No tracks found to add to playlist");
+                return;
+            }
 
-    //         string playlistId = await spotifyAppServices.SpotifyCreatePlaylist(PlaylistNameText);
+            string playlistId = await spotifyAppServices.SpotifyCreatePlaylist(PlaylistNameText);
 
-    //         await spotifyAppServices.SpotifyAddTracksToPlaylist(listSpotifyTrackIds, playlistId);
-    //         OpenPlaylist(playlistId, PlaylistNameText);
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         Console.WriteLine("CreatePlaylist ex: " + ex.Message);
-    //     }
-    // }
+            await spotifyAppServices.SpotifyAddTracksToPlaylist(listSpotifyTrackIds, playlistId);
+            OpenPlaylist(playlistId, PlaylistNameText);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("CreatePlaylist ex: " + ex.Message);
+        }
+    }
 }
 
 

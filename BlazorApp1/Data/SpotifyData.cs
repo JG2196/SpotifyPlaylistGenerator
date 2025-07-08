@@ -75,7 +75,7 @@
 
     public class CreatePlaylist
     {
-        public List<CreateTrack> listTracks = new List<CreateTrack>();
+        public List<string> listTrackIds = new List<string>();
     }
     public class CreateTrack
     {

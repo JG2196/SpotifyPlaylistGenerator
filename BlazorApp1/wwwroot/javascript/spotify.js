@@ -115,7 +115,7 @@ function spotifyProcessChatResponse(jsonData) {
         console.debug(`spotifyProcessChatResponse adding: ${obj.Playlist[index].Title} - ${obj.Playlist[index].Artist}.`);
         var elmLi = document.createElement("li");
 
-        elmLi.setAttribute("spotify_id", obj.Playlist[index].spotify_id);
+        elmLi.setAttribute("spotify_id", obj.Playlist[index].Spotify_Id);
         elmLi.setAttribute("track_name", obj.Playlist[index].Title);
         elmLi.setAttribute("track_artist", obj.Playlist[index].Artist);
         elmLi.style.listStyleType = "none";
@@ -147,14 +147,15 @@ function getTracks() {
     const childLi = aiListPlaylistTracks.getElementsByTagName("li");
 
     for (let i = 0; i < childLi.length; i++) {
-        let spotifyTrackName = childLi[i].getAttribute("track_name");
-        let spotifyTrackArtist = childLi[i].getAttribute("track_artist");
+        let spotifyId = childLi[i].getAttribute("spotify_id");
+        //let spotifyTrackName = childLi[i].getAttribute("track_name");
+        //let spotifyTrackArtist = childLi[i].getAttribute("track_artist");
 
-        let CreateTrack = {
-            artist: spotifyTrackArtist,
-            name: spotifyTrackName
-        }
-        listTracks.push(CreateTrack);
+        //let CreateTrack = {
+          //  artist: spotifyTrackArtist,
+            //name: spotifyTrackName
+        //}
+        listTracks.push(spotifyId);
     }
 
     return JSON.stringify(listTracks);
