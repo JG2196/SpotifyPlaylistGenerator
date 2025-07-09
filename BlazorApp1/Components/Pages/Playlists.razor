@@ -85,6 +85,7 @@
         <input id="input_Prompt" @bind="PromptText" placeholder="Enter text here" style="width:400px" />
 
         <button @onclick="SubmitPrompt">Submit</button>
+        <button id="btn_SelectAll" onclick="selectAll()" style="display:none">Select All</button>
         <button id="btn_CreatePlaylist" @onclick="CreatePlaylist" style="display:none">Create Playlist</button>
     </div>
     <div class="w3-center" id="display_Loading" style="display:none">
