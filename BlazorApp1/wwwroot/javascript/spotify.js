@@ -1,4 +1,4 @@
-﻿function showPlaylists(bShowPlaylists) {
+﻿function spotifyShowPlaylists(bShowPlaylists) {
 
     const spotifyPlaylistsDisplay = document.getElementById("spotifyPlaylistsDisplay");
     const spotifyPlaylistDisplay = document.getElementById("spotifyPlaylistDisplay");
@@ -18,18 +18,18 @@
     }
 }
 
-function spotifySetSearchDisplay(jsonDataUser, jsonListPlaylists) {
+//function spotifySetSearchDisplay(jsonDataUser, jsonListPlaylists) {
 
-    spotifyDisplayUserInfo(jsonDataUser);
-    spotifyDisplayPlaylists(jsonListPlaylists);
-}
-function spotifyDisplayUserInfo(jsonDataUser) {
-    //console.debug("spotifyDisplayUserInfo");
+//    spotifyDisplayUserInfo(jsonDataUser);
+//    spotifyDisplayPlaylists(jsonListPlaylists);
+//}
+//function spotifyDisplayUserInfo(jsonDataUser) {
+//    //console.debug("spotifyDisplayUserInfo");
 
-    const obj = JSON.parse(jsonDataUser);
-    document.getElementById("user_id").innerText = obj.SpotifyID;
-}
-function displayNavigation() {
+//    const obj = JSON.parse(jsonDataUser);
+//    document.getElementById("user_id").innerText = obj.SpotifyID;
+//}
+function spotifyDisplayNavigation() {
     document.getElementById("div_Sidebar").style.display = "";
 }
 function spotifyDisplayPlaylists(jsonListPlaylists) {
@@ -139,13 +139,13 @@ function spotifyProcessChatResponse(jsonData) {
     aiGeneratedPlaylist.style.display = "";
 }
 
-function showLoading() {
+function spotifyShowLoading() {
     document.getElementById("display_Loading").style.display = "";
     document.getElementById("spotifyPlaylistDisplay").style.display = "none";
     document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
 }
 
-function getTracks() {
+function spotifyGetTracks() {
 
     let listTracks = [];
 
@@ -163,7 +163,7 @@ function getTracks() {
 
     return JSON.stringify(listTracks);
 }
-function selectAll() {
+function spotifySelectAll() {
     const aiListPlaylistTracks = document.getElementById("ai_ListPlaylistTracks");
     const childLi = aiListPlaylistTracks.getElementsByTagName("li");
 
@@ -173,6 +173,6 @@ function selectAll() {
         checkbox.checked = true;
     }
 }
-function spotTest(displayName) {
-    document.getElementById("user_id").innerText = displayName;
-}
+//function spotTest(displayName) {
+//    document.getElementById("user_id").innerText = displayName;
+//}

@@ -160,7 +160,7 @@ namespace BlazorApp1.SpotifyServices
                         await ExchangeCodeForToken(SpotifyCode, true);
                     }
 
-                    await _JSRunTime.InvokeVoidAsync("displayNavigation");
+                    await _JSRunTime.InvokeVoidAsync("spotifyDisplayNavigation");
                     SpotifyAuthUser spotifyAuthUser = await SpotifyGetProfile();
                     List<SpotifyPlaylist>? spotifyListPlaylists = await SpotifyGetPlaylists();
 
