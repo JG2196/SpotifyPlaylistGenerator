@@ -15,7 +15,7 @@ builder.Services.AddHttpClient("ApiClient", client =>
 });
 var apiKey = builder.Configuration["OpenAI:APIKey"];
 builder.Services.AddDataProtection();
-builder.Services.AddSingleton<SpotifyServicess_TokenService>();
+builder.Services.AddSingleton<SpotifyServices_TokenService>();
 builder.Services.AddSingleton(new OpenAIClient(apiKey));
 
 var app = builder.Build();

@@ -9,7 +9,7 @@ namespace BlazorApp1.OpenAIServices
 {
     public partial class OpenAIServices
     {
-        public IConfiguration _Configuration;
+        public IConfiguration _config;
 
         // Try using a Verbatim String "@"
         private readonly string AssistantContent = "Create a playlist that aligns with the user's needs based on their input. The assistant should be friendly with a laid-back, 80's music connoisseur vibe. "
@@ -46,7 +46,7 @@ namespace BlazorApp1.OpenAIServices
 
         public OpenAIServices(IConfiguration configuration)
         {
-            _Configuration = configuration;
+            _config = configuration;
         }
 
         public async Task<OpenAIPlaylist?> OpenAISubmitQuery(string prompt)
@@ -57,7 +57,7 @@ namespace BlazorApp1.OpenAIServices
                 string endpoint = "https://api.openai.com/v1/chat/completions";
 
                 using var client = new HttpClient();
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {_Configuration["OpenAI:APIKey"]}");
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {_config["OpenAI:APIKey"]}");
 
                 var requestBody = new
                 {

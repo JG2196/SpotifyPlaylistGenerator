@@ -10,11 +10,11 @@
 @using Newtonsoft.Json.Linq;
 @using System.Text.RegularExpressions;
 
-@inject NavigationManager NavigationManager
-@inject HttpClient Http;
-@inject IConfiguration _Configuration
-@inject IJSRuntime JSRuntime
-@inject SpotifyServicess_TokenService TokenService
+@inject NavigationManager _navigationManager
+@* @inject HttpClient _httpClient *@
+@inject IConfiguration _config
+@inject IJSRuntime _jsRuntime
+@inject SpotifyServices_TokenService _tokenService
 
 @page "/playlists"
 @rendermode InteractiveServer
@@ -115,71 +115,37 @@
     private bool _hasInitialized = false;
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime, TokenService);
+        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_config, _jsRuntime, _tokenService);
 
         if (firstRender && !_hasInitialized)
         {
             _hasInitialized = true;
-            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-            string spotifyCode = spotifyAppServices.GetSpotifyCode(uri);
+            SpotifyAuthUserData spotifyAuthUserData = await spotifyAppServices.InitSpotifyFlow();
 
-            SpotifyAuthUserData spotifyAuthUserData = await spotifyAppServices.InitSpotifyFlow(spotifyCode);
-
-             if (spotifyAuthUserData == null) { AuthorizeSpotify(); }
-             else
-            {
-                SpotifyAuthUser = spotifyAuthUserData.SpotifyAuthUser;
-                SpotifyListPlaylists = spotifyAuthUserData.ListSpotifyPlaylists;
-                bFoundUser = true;
-                StateHasChanged();
-                //string user = JsonConvert.SerializeObject(spotifyAuthUserData);
-
-                //await JSRuntime.InvokeVoidAsync("populatePlaylists", user);
-            }
-        }
-    }
-    private void AuthorizeSpotify()
-    {
-        string? spotifyAuthUrl = null;
-
-        try
-        {
-            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime, TokenService);
-
-            spotifyAuthUrl = spotifyAppServices.SpotifySignInAuth(true);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("AuthorizeSpotify Ex: " + ex.Message);
-        }
-
-        if (!string.IsNullOrEmpty(spotifyAuthUrl))
-        {
-            NavigationManager.NavigateTo(spotifyAuthUrl, true);
-        }
-        else
-        {
-            Console.WriteLine("AuthorizeSpotify: spotifyAuthUrl is null");
+            SpotifyAuthUser = spotifyAuthUserData.SpotifyAuthUser;
+            SpotifyListPlaylists = spotifyAuthUserData.ListSpotifyPlaylists;
+            bFoundUser = true;
+            StateHasChanged();
         }
     }
     private async Task AuthorizeSignOut()
     {
-        Console.WriteLine(TokenService.AccessToken);
+        //Console.WriteLine(_tokenService.AccessToken);
         string signoutUrl = "https://accounts.spotify.com/logout/";
         //Open new tab to signout
         await RemoveToken();
-        Console.WriteLine(TokenService.AccessToken);
-        await JSRuntime.InvokeVoidAsync("open", signoutUrl, "_blank");
+        //Console.WriteLine(_tokenService.AccessToken);
+        await _jsRuntime.InvokeVoidAsync("open", signoutUrl, "_blank");
         
         //Call JS function
-        await JSRuntime.InvokeVoidAsync("navigate", "");
+        await _jsRuntime.InvokeVoidAsync("navigate", "");
 
     }
     private async Task RemoveToken()
     {
         try
         {
-            await TokenService.ClearTokens();
+            await _tokenService.ClearTokens();
         }
         catch (Exception ex)
         {
@@ -188,12 +154,12 @@
     }
     private async void OpenPlaylist(string id, string playlistName) 
     {
-        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime, TokenService);
+        SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_config, _jsRuntime, _tokenService);
 
         try
         {
             Console.WriteLine("OpenPlaylist id: " + id);
-            await JSRuntime.InvokeVoidAsync("spotifyOpenPlaylist", playlistName);
+            await _jsRuntime.InvokeVoidAsync("spotifyOpenPlaylist", playlistName);
             SpotifySelectedPlaylist = await spotifyAppServices.SpotifyGetPlaylist(id);
             StateHasChanged();
         }
@@ -206,9 +172,9 @@
     {
         try
         {
-            JSRuntime.InvokeVoidAsync("spotifyShowLoading");
+            _jsRuntime.InvokeVoidAsync("spotifyShowLoading");
 
-            OpenAIServices openAIServices = new OpenAIServices(_Configuration);
+            OpenAIServices openAIServices = new OpenAIServices(_config);
 
             OpenAIPlaylist? result = await openAIServices.OpenAISubmitQuery(PromptText);
 
@@ -219,12 +185,12 @@
             }
 
             // Search for tracks in Spotify
-            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime, TokenService);
+            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_config, _jsRuntime, _tokenService);
             
             result.Playlist = await spotifyAppServices.SpotifyGetTrackIDs(result.Playlist);
             string playlistResult = JsonConvert.SerializeObject(result);
 
-            await JSRuntime.InvokeVoidAsync("spotifyProcessChatResponse", playlistResult);
+            await _jsRuntime.InvokeVoidAsync("spotifyProcessChatResponse", playlistResult);
         }
         catch (Exception ex)
         {
@@ -236,14 +202,14 @@
     {
         try
         {
-            string result = await JSRuntime.InvokeAsync<string>("spotifyGetTracks"); ;
+            string result = await _jsRuntime.InvokeAsync<string>("spotifyGetTracks"); ;
 
             List<string> listSpotifyTrackIds;
             listSpotifyTrackIds = JsonConvert.DeserializeObject<List<string>>(result);
 
             CreatePlaylist createPlaylist = new CreatePlaylist();
 
-            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_Configuration, JSRuntime, TokenService);
+            SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_config, _jsRuntime, _tokenService);
 
             if (listSpotifyTrackIds.Count == 0)
             {

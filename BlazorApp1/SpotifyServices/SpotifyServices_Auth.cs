@@ -18,75 +18,21 @@ namespace BlazorApp1.SpotifyServices
     public partial class SpotifyAppServices
     {
         private readonly HttpClient _httpClient;
-        public IConfiguration _Configuration;
-        public IJSRuntime _JSRunTime;
-        public SpotifyServicess_TokenService _TokenService;
+        public IConfiguration _config;
+        public IJSRuntime _jsRunTime;
+        public SpotifyServices_TokenService _tokenService;
 
-        public SpotifyAppServices(IConfiguration configuration, IJSRuntime jsRuntime, SpotifyServicess_TokenService tokenService)
+        public SpotifyAppServices(IConfiguration configuration, IJSRuntime jsRuntime, SpotifyServices_TokenService tokenService)
         {
             _httpClient = new HttpClient();
-            _Configuration = configuration;
-            _JSRunTime = jsRuntime;
-            _TokenService = tokenService;
+            _config = configuration;
+            _jsRunTime = jsRuntime;
+            _tokenService = tokenService;
         }
 
-        public string SpotifySignInAuth(bool ToPlaylists)
-        {
-            string? spotifyAuthUrl = null;
-            string spotifyAuthAddress = "https://accounts.spotify.com/authorize";
-            string redirectUri = _Configuration["SpotifyWeb:RedirectUri"];
-            
-            if (!ToPlaylists) {
-                redirectUri = _Configuration["SpotifyWeb:RedirectUriPlaylistGen"];
-            }
-
-            Console.WriteLine("clientID: " + _Configuration["SpotifyWeb:ClientId"]);
-            try
-            {
-                spotifyAuthUrl = $"{spotifyAuthAddress}?client_id={_Configuration["SpotifyWeb:ClientId"]}&response_type=code&redirect_uri={Uri.EscapeDataString(redirectUri)}&scope={Uri.EscapeDataString(_Configuration["SpotifyWeb:Scopes"])}";
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("SpotifySignInAuth Ex: " + ex.Message);
-            }
-
-            return spotifyAuthUrl;
-        }
-        public async Task ExchangeCodeForToken(string code, bool ToPlaylists)
-        {
-            string redirectUri = _Configuration["SpotifyWeb:RedirectUri"];
-            if (!ToPlaylists) { redirectUri = _Configuration["SpotifyWeb:RedirectUriPlaylistGen"]; }
-            try
-            {
-
-                //HttpClient httpClient = new HttpClient();
-
-                var requestContent = new FormUrlEncodedContent(new[]
-                {
-                    new KeyValuePair<string, string>("grant_type", "authorization_code"),
-                    new KeyValuePair<string, string>("code", code),
-                    new KeyValuePair<string, string>("redirect_uri", redirectUri),
-                    new KeyValuePair<string, string>("client_id", _Configuration["SpotifyWeb:ClientId"]),
-                    new KeyValuePair<string, string>("client_secret", _Configuration["SpotifyWeb:ClientSecret"]),
-                });
-
-                var response = await _httpClient.PostAsync("https://accounts.spotify.com/api/token", requestContent);
-                var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-
-                var accessToken = json.GetProperty("access_token").GetString();
-                var expiresIn = json.GetProperty("expires_in").GetInt32();
-                var refreshToken = json.GetProperty("refresh_token").GetString();
-
-                _TokenService.SetTokens(accessToken, expiresIn, refreshToken);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("ExchangeCodeForToken Ex: " + ex.Message);
-            }
-        }
         public async Task<bool> TryRefreshAccessTokenAsync()
         {
-            var refreshToken = _TokenService.GetRefreshToken();
+            var refreshToken = _tokenService.GetRefreshToken();
             if (string.IsNullOrEmpty(refreshToken)) return false;
 
             //HttpClient httpClient = new HttpClient();
@@ -95,8 +41,8 @@ namespace BlazorApp1.SpotifyServices
                 {
                     new KeyValuePair<string, string>("grant_type", "refresh_token"),
                     new KeyValuePair<string, string>( "refresh_token", refreshToken),
-                    new KeyValuePair<string, string>("client_id", _Configuration["SpotifyWeb:ClientId"]),
-                    new KeyValuePair<string, string>("client_secret", _Configuration["SpotifyWeb:ClientSecret"]),
+                    new KeyValuePair<string, string>("client_id", _config["SpotifyWeb:ClientId"]),
+                    new KeyValuePair<string, string>("client_secret", _config["SpotifyWeb:ClientSecret"]),
             });
 
             var response = await _httpClient.PostAsync("https://accounts.spotify.com/api/token", requestContent);
@@ -107,7 +53,7 @@ namespace BlazorApp1.SpotifyServices
             var accessToken = json.GetProperty("access_token").GetString();
             var expiresIn = json.GetProperty("expires_in").GetInt32();
 
-            _TokenService.SetTokens(accessToken, expiresIn, null); // Don't overwrite refresh token
+            _tokenService.SetTokens(accessToken, expiresIn, null); // Don't overwrite refresh token
             return true;
         }
         public async Task<HttpResponseMessage> SendWithRateLimitRetryAsync(HttpClient client, string url, HttpMethod method, HttpContent content = null, int maxRetries = 3)
@@ -148,30 +94,23 @@ namespace BlazorApp1.SpotifyServices
             }
             throw new Exception("Unexpected end of retry loop");
         }
-        public async Task<SpotifyAuthUserData> InitSpotifyFlow(string SpotifyCode)
+        public async Task<SpotifyAuthUserData> InitSpotifyFlow()
         {
             SpotifyAuthUserData? spotifyAuthUserData = null;
             try
             {
-                if (!string.IsNullOrEmpty(SpotifyCode))
+                await _jsRunTime.InvokeVoidAsync("spotifyDisplayNavigation");
+                SpotifyAuthUser spotifyAuthUser = await SpotifyGetProfile();
+                List<SpotifyPlaylist>? spotifyListPlaylists = await SpotifyGetPlaylists();
+
+                if (spotifyAuthUser != null)
                 {
-                    if (string.IsNullOrEmpty(_TokenService.AccessToken))
-                    {
-                        await ExchangeCodeForToken(SpotifyCode, true);
-                    }
+                    spotifyAuthUserData = new SpotifyAuthUserData();
 
-                    await _JSRunTime.InvokeVoidAsync("spotifyDisplayNavigation");
-                    SpotifyAuthUser spotifyAuthUser = await SpotifyGetProfile();
-                    List<SpotifyPlaylist>? spotifyListPlaylists = await SpotifyGetPlaylists();
-
-                    if (spotifyAuthUser != null)
-                    {
-                        spotifyAuthUserData = new SpotifyAuthUserData();
-
-                        spotifyAuthUserData.SpotifyAuthUser = spotifyAuthUser;
-                        spotifyAuthUserData.ListSpotifyPlaylists = spotifyListPlaylists;
-                    }
+                    spotifyAuthUserData.SpotifyAuthUser = spotifyAuthUser;
+                    spotifyAuthUserData.ListSpotifyPlaylists = spotifyListPlaylists;
                 }
+            
             }
             catch (NavigationException navEx)
             {
@@ -183,33 +122,18 @@ namespace BlazorApp1.SpotifyServices
             }
             return spotifyAuthUserData;
         }
-        public string GetSpotifyCode(Uri uri)
-        {
-            string? spotifyCode = null;
-            try
-            {
-                var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
-                spotifyCode = query["code"] ?? null;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("GetSpotifyCode Ex: " + ex.Message);
-            }
-
-            return spotifyCode;
-        }
         public async Task<SpotifyAuthUser> SpotifyGetProfile()
         {
             SpotifyAuthUser spotifyAuthUser = new SpotifyAuthUser();
             
             try
             {
-                if (_TokenService.IsAccessTokenExpired)
+                if (_tokenService.IsAccessTokenExpired)
                 {
                     await TryRefreshAccessTokenAsync();
                 }
 
-                var accessToken = _TokenService.AccessToken;
+                var accessToken = _tokenService.AccessToken;
 
                 if (string.IsNullOrEmpty(accessToken))
                 {
@@ -242,12 +166,12 @@ namespace BlazorApp1.SpotifyServices
 
             try
             {
-                if (_TokenService.IsAccessTokenExpired)
+                if (_tokenService.IsAccessTokenExpired)
                 {
                     await TryRefreshAccessTokenAsync();
                 }
 
-                var accessToken = _TokenService.AccessToken;
+                var accessToken = _tokenService.AccessToken;
 
                 if (string.IsNullOrEmpty(accessToken))
                 {
@@ -320,12 +244,12 @@ namespace BlazorApp1.SpotifyServices
 
             try
             {
-                if (_TokenService.IsAccessTokenExpired)
+                if (_tokenService.IsAccessTokenExpired)
                 {
                     await TryRefreshAccessTokenAsync();
                 }
 
-                var accessToken = _TokenService.AccessToken;
+                var accessToken = _tokenService.AccessToken;
                 
                 if (string.IsNullOrEmpty(accessToken))
                 {
@@ -458,12 +382,12 @@ namespace BlazorApp1.SpotifyServices
             List<OpenAITrack> listTracksToRemove = new List<OpenAITrack>();
             try
             {
-                if (_TokenService.IsAccessTokenExpired)
+                if (_tokenService.IsAccessTokenExpired)
                 {
                     await TryRefreshAccessTokenAsync();
                 }
 
-                var accessToken = _TokenService.AccessToken;
+                var accessToken = _tokenService.AccessToken;
                 if (string.IsNullOrEmpty(accessToken))
                 {
                     throw new Exception("Access token is null or empty. Please authenticate first.");
@@ -542,12 +466,12 @@ namespace BlazorApp1.SpotifyServices
 
             try
             {
-                if (_TokenService.IsAccessTokenExpired)
+                if (_tokenService.IsAccessTokenExpired)
                 {
                     await TryRefreshAccessTokenAsync();
                 }
 
-                var accessToken = _TokenService.AccessToken;
+                var accessToken = _tokenService.AccessToken;
 
                 if (string.IsNullOrEmpty(accessToken))
                 {
@@ -581,12 +505,12 @@ namespace BlazorApp1.SpotifyServices
 
             try
             {
-                if (_TokenService.IsAccessTokenExpired)
+                if (_tokenService.IsAccessTokenExpired)
                 {
                     await TryRefreshAccessTokenAsync();
                 }
 
-                var accessToken = _TokenService.AccessToken;
+                var accessToken = _tokenService.AccessToken;
 
                 if (string.IsNullOrEmpty(accessToken))
                 {
