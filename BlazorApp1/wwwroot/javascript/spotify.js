@@ -1,4 +1,4 @@
-﻿function showPlaylists(bShowPlaylists) {
+﻿function spotifyShowPlaylists(bShowPlaylists) {
 
     const spotifyPlaylistsDisplay = document.getElementById("spotifyPlaylistsDisplay");
     const spotifyPlaylistDisplay = document.getElementById("spotifyPlaylistDisplay");
@@ -17,60 +17,19 @@
         btnCreatePlaylist.style.display = "none";
     }
 }
-//function populatePlaylists(authUserData) {
 
-//    const obj = JSON.parse(authUserData);
-//    const spotifyPlaylistsDisplay = document.getElementById("spotifyPlaylistsDisplay");
+//function spotifySetSearchDisplay(jsonDataUser, jsonListPlaylists) {
 
-//    document.getElementById("user_id").innerText = obj.SpotifyAuthUser.DisplayName;
-
-//    if (obj.ListSpotifyPlaylists.Playlists.length == 0) {
-//        return;
-//    }
-
-//    for (let index in obj.ListSpotifyPlaylists.Playlists) {
-
-//        let elm_Div = document.createElement("div");
-//        let elm_Img = document.createElement("img");
-//        let elm_H5 = document.createElement("h5");
-//        let elm_B = document.createElement("b");
-
-//        elm_Div.classList.add("w3-card");
-//        elm_Div.classList.add("w3-bar-item");
-//        elm_Div.classList.add("w3-round-xlarge");
-//        elm_Div.setAttribute("onclick", `@OpenPlaylist(${obj.ListSpotifyPlaylists.Playlists[index].Id}, ${obj.ListSpotifyPlaylists.Playlists[index].Name})`);
-//        elm_Div.style.paddingTop = "16px";
-//        elm_Div.style.margin = "8px";
-//        elm_Div.style.cursor = "pointer";
-
-//        elm_Img.classList.add("w3-round-large");
-//        if (obj.ListSpotifyPlaylists.Playlists[index].Images != null) {
-//            elm_Img.src = obj.ListSpotifyPlaylists.Playlists[index].Images[0].Url;
-//        }
-//        elm_Img.style.width = "200px";
-//        elm_Img.style.height = "200px";
-
-//        elm_H5.style.textAlign = "right";
-//        elm_B.innerText = obj.ListSpotifyPlaylists.Playlists[index].Name;
-
-//        elm_H5.appendChild(elm_B);
-//        elm_Div.appendChild(elm_Img);
-//        elm_Div.appendChild(elm_H5);
-//        spotifyPlaylistsDisplay.appendChild(elm_Div);
-//    }
+//    spotifyDisplayUserInfo(jsonDataUser);
+//    spotifyDisplayPlaylists(jsonListPlaylists);
 //}
-function spotifySetSearchDisplay(jsonDataUser, jsonListPlaylists) {
+//function spotifyDisplayUserInfo(jsonDataUser) {
+//    //console.debug("spotifyDisplayUserInfo");
 
-    spotifyDisplayUserInfo(jsonDataUser);
-    spotifyDisplayPlaylists(jsonListPlaylists);
-}
-function spotifyDisplayUserInfo(jsonDataUser) {
-    //console.debug("spotifyDisplayUserInfo");
-
-    const obj = JSON.parse(jsonDataUser);
-    document.getElementById("user_id").innerText = obj.SpotifyID;
-}
-function displayNavigation() {
+//    const obj = JSON.parse(jsonDataUser);
+//    document.getElementById("user_id").innerText = obj.SpotifyID;
+//}
+function spotifyDisplayNavigation() {
     document.getElementById("div_Sidebar").style.display = "";
 }
 function spotifyDisplayPlaylists(jsonListPlaylists) {
@@ -139,26 +98,36 @@ function spotifyAlterString(str) {
 }
 function spotifyProcessChatResponse(jsonData) {
 
+    //console.debug(`spotifyProcessChatResponse: START`);
     const aiGeneratedPlaylist = document.getElementById("ai_GeneratedPlaylist");
     const aiListPlaylistTracks = document.getElementById("ai_ListPlaylistTracks");
     document.getElementById("btn_CreatePlaylist").style.display = "";
+    document.getElementById("btn_SelectAll").style.display = "";
 
     let obj = JSON.parse(jsonData);
-
     document.getElementById("input_Prompt").value = "";
-    document.getElementById("ai_PlaylistDescription").innerText = obj.description;
 
-    for (var index in obj.playlist) {
+    document.getElementById("ai_PlaylistDescription").innerText = obj.Description;
 
-        var elmLi = document.createElement("li");
+    for (var index in obj.Playlist) {
+        //console.debug(`spotifyProcessChatResponse adding: ${obj.Playlist[index].Title} - ${obj.Playlist[index].Artist}.`);
+        let elmLi = document.createElement("li");
+        let elmInput = document.createElement("input");
+        let elmA = document.createElement("a");
 
-        //elm_Li.setAttribute("spotify_id", obj.playlist[index].spotify_id);
-        elmLi.setAttribute("track_name", obj.playlist[index].title);
-        elmLi.setAttribute("track_artist", obj.playlist[index].artist);
+        elmLi.setAttribute("spotify_id", obj.Playlist[index].Spotify_Id);
         elmLi.style.listStyleType = "none";
 
-        elmLi.innerText = `${obj.playlist[index].title} - ${obj.playlist[index].artist}`;
+        elmInput.classList.add("w3-check");
+        elmInput.type = "checkbox";
+        elmInput.id = `check_${obj.Playlist[index].Spotify_Id}`;
+        elmInput.checked = true;
 
+        elmA.innerText = `${obj.Playlist[index].Title} - ${obj.Playlist[index].Artist}`;
+
+        elmLi.appendChild(elmInput);
+        elmLi.appendChild(elmA);
+        
         aiListPlaylistTracks.appendChild(elmLi);
     }
 
@@ -170,13 +139,13 @@ function spotifyProcessChatResponse(jsonData) {
     aiGeneratedPlaylist.style.display = "";
 }
 
-function showLoading() {
+function spotifyShowLoading() {
     document.getElementById("display_Loading").style.display = "";
     document.getElementById("spotifyPlaylistDisplay").style.display = "none";
     document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
 }
 
-function getTracks() {
+function spotifyGetTracks() {
 
     let listTracks = [];
 
@@ -184,18 +153,26 @@ function getTracks() {
     const childLi = aiListPlaylistTracks.getElementsByTagName("li");
 
     for (let i = 0; i < childLi.length; i++) {
-        let spotifyTrackName = childLi[i].getAttribute("track_name");
-        let spotifyTrackArtist = childLi[i].getAttribute("track_artist");
+        let spotifyId = childLi[i].getAttribute("spotify_id");
+        let checkbox = document.getElementById(`check_${spotifyId}`);
 
-        let CreateTrack = {
-            artist: spotifyTrackArtist,
-            name: spotifyTrackName
+        if (checkbox.checked == true) {
+            listTracks.push(spotifyId);
         }
-        listTracks.push(CreateTrack);
     }
 
     return JSON.stringify(listTracks);
 }
-function spotTest(displayName) {
-    document.getElementById("user_id").innerText = displayName;
+function spotifySelectAll() {
+    const aiListPlaylistTracks = document.getElementById("ai_ListPlaylistTracks");
+    const childLi = aiListPlaylistTracks.getElementsByTagName("li");
+
+    for (let i = 0; i < childLi.length; i++) {
+        let spotifyId = childLi[i].getAttribute("spotify_id");
+        let checkbox = document.getElementById(`check_${spotifyId}`);
+        checkbox.checked = true;
+    }
 }
+//function spotTest(displayName) {
+//    document.getElementById("user_id").innerText = displayName;
+//}

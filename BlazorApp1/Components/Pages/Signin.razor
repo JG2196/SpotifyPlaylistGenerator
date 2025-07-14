@@ -1,13 +1,47 @@
-﻿
+﻿@using SpotifyServices;
+
+@inject NavigationManager _navigationManager
+@inject IConfiguration _config
+@inject HttpClient _httpClient
+@inject SpotifyServices_TokenService _tokenService
+
 @page "/"
+@rendermode InteractiveServer
 
 <PageTitle>Sign in</PageTitle>
 
 <h3>Spotify Playlist Creator</h3>
-<button onclick="navigate('playlists')">Sign in</button>
+<button @onclick="SpotifySignin">Sign in</button>
 
 <script type="text/javascript">
     window.addEventListener("load", () => {
-        document.getElementById("div_Sidebar").style.display = "none";
+         document.getElementById("div_Sidebar").style.display = "none";
     });
 </script>
+
+@code {
+    private async Task SpotifySignin()
+    {
+        string? spotifyAuthUrl = null;
+
+        try
+        {
+            SpotifyServices_Signin SpotifyServicesSignin = new SpotifyServices_Signin(_config, _httpClient, _tokenService);
+
+            spotifyAuthUrl = SpotifyServicesSignin.SpotifySigninAuth();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("SpotifySignin Ex: " + ex.Message);
+        }
+
+        if (!string.IsNullOrEmpty(spotifyAuthUrl))
+        {
+            _navigationManager.NavigateTo(spotifyAuthUrl, true);
+        }
+        else
+        {
+            Console.WriteLine("SpotifySignin: spotifyAuthUrl is null");
+        }
+    }
+}

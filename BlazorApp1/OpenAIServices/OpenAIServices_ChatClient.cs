@@ -1,4 +1,5 @@
-﻿using Microsoft.JSInterop;
+﻿using BlazorApp1.Data;
+using Microsoft.JSInterop;
 using Newtonsoft.Json;
 using OpenAI.Chat;
 using System.Text;
@@ -8,7 +9,7 @@ namespace BlazorApp1.OpenAIServices
 {
     public partial class OpenAIServices
     {
-        public IConfiguration _Configuration;
+        public IConfiguration _config;
 
         // Try using a Verbatim String "@"
         private readonly string AssistantContent = "Create a playlist that aligns with the user's needs based on their input. The assistant should be friendly with a laid-back, 80's music connoisseur vibe. "
@@ -45,18 +46,18 @@ namespace BlazorApp1.OpenAIServices
 
         public OpenAIServices(IConfiguration configuration)
         {
-            _Configuration = configuration;
+            _config = configuration;
         }
 
-        public async Task<string> OpenAISubmitQuery(string prompt)
+        public async Task<OpenAIPlaylist?> OpenAISubmitQuery(string prompt)
         {
-            string? resultString = string.Empty;
+            OpenAIPlaylist? openAIPlaylist = null;
             try
             {
                 string endpoint = "https://api.openai.com/v1/chat/completions";
 
                 using var client = new HttpClient();
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {_Configuration["OpenAI:APIKey"]}");
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {_config["OpenAI:APIKey"]}");
 
                 var requestBody = new
                 {
@@ -75,13 +76,24 @@ namespace BlazorApp1.OpenAIServices
 
                 dynamic result = JsonConvert.DeserializeObject(responseString);
 
-                resultString = OpenAIExtractJsonFromResponse(result.choices[0].message.content.ToString());
+                string? resultString = OpenAIExtractJsonFromResponse(result.choices[0].message.content.ToString());
+
+                if (!string.IsNullOrEmpty(resultString))
+                {
+                    openAIPlaylist = JsonConvert.DeserializeObject<OpenAIPlaylist>(resultString);
+                }
+
+                if (openAIPlaylist.Playlist.Count < 15)
+                {
+                    openAIPlaylist = null; // Ensure at least 15 tracks
+                }
+                
             }
             catch (Exception ex)
             {
                 Console.WriteLine("OpenAISubmitQuery ex: " + ex.Message);
             }
-            return resultString;
+            return openAIPlaylist;
         }
 
         // OpenAi JSON response contains ```
@@ -102,6 +114,10 @@ namespace BlazorApp1.OpenAIServices
                 return match.Groups[1].Value;
             }
 
+            if (!match.Success)
+            {
+                return null;
+            }
             // If no match is found, return original string (may cause deserialize errors)
             return response;
         }

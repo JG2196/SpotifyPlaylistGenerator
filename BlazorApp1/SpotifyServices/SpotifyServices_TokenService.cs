@@ -2,7 +2,7 @@
 
 namespace BlazorApp1.SpotifyServices
 {
-    public class SpotifyServicess_TokenService
+    public class SpotifyServices_TokenService
     {
         private readonly IDataProtector _protector;
         private string _accessToken;
@@ -11,7 +11,7 @@ namespace BlazorApp1.SpotifyServices
         // Simulated DB or secure store
         private string _protectedRefreshToken;
 
-        public SpotifyServicess_TokenService(IDataProtectionProvider provider)
+        public SpotifyServices_TokenService(IDataProtectionProvider provider)
         {
             _protector = provider.CreateProtector("SpotifyTokenProtector");
         }

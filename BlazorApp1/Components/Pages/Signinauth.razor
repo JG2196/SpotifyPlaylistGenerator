@@ -1,0 +1,34 @@
+﻿@using SpotifyServices;
+
+@inject IConfiguration _config
+@inject NavigationManager _navigationManager
+@inject HttpClient _httpClient
+@inject SpotifyServices_TokenService _tokenService;
+@* <h3>SigninAuth</h3> *@
+
+@rendermode InteractiveServer
+@page "/signinauth"
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        bool bSigninAuthSuccessful = false;
+
+        try
+        {
+            SpotifyServices_Signin spotifyAppServices = new SpotifyServices_Signin(_config, _httpClient, _tokenService);
+
+            var uri = _navigationManager.ToAbsoluteUri(_navigationManager.Uri);
+            string spotifyCode = spotifyAppServices.SpotifyGetSpotifyCode(uri);
+            bSigninAuthSuccessful = await spotifyAppServices.SpotifyExchangeCodeForToken(spotifyCode);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("OnInitializedAsync Ex: " + ex.Message);
+        }
+
+        if (bSigninAuthSuccessful)
+        {
+        _navigationManager.NavigateTo("/playlists", true);
+        }
+    }
+}
