@@ -11,7 +11,6 @@
 @using System.Text.RegularExpressions;
 
 @inject NavigationManager _navigationManager
-@* @inject HttpClient _httpClient *@
 @inject IConfiguration _config
 @inject IJSRuntime _jsRuntime
 @inject SpotifyServices_TokenService _tokenService
@@ -83,17 +82,20 @@
     <div id="aiPrompts" style="display:none">
         <h1 class="w3-bar-item">Search</h1>
         <input id="input_Prompt" @bind="PromptText" placeholder="Enter text here" style="width:400px" />
+        <input id="input_PlaylistName" @bind="PlaylistNameText" placeholder="Enter name..." style="width:400px;display:none" />
 
-        <button @onclick="SubmitPrompt">Submit</button>
+        <button id="btn_SubmitPrompt" @onclick="SubmitPrompt">Submit</button>
         <button id="btn_SelectAll" onclick="spotifySelectAll()" style="display:none">Select All</button>
         <button id="btn_CreatePlaylist" @onclick="CreatePlaylist" style="display:none">Create Playlist</button>
     </div>
     <div class="w3-center" id="display_Loading" style="display:none">
-        <h1>Loading</h1>
+        <h1>Loading...</h1>
+    </div>
+    <div class="w3-center" id="display_CreatingPlaylist" style="display:none">
+        <h1>Creating Playlist...</h1>
     </div>
     <br />
     <div id="ai_GeneratedPlaylist" style="display:none">
-        <input id="input_PlaylistName" @bind="PlaylistNameText" placeholder="Enter name..." style="width:400px" />
         <br />
         <h3 id="ai_PlaylistDescription"></h3>
         <br />
@@ -136,7 +138,7 @@
         await RemoveToken();
         //Console.WriteLine(_tokenService.AccessToken);
         await _jsRuntime.InvokeVoidAsync("open", signoutUrl, "_blank");
-        
+
         //Call JS function
         await _jsRuntime.InvokeVoidAsync("navigate", "");
 
@@ -186,7 +188,7 @@
 
             // Search for tracks in Spotify
             SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_config, _jsRuntime, _tokenService);
-            
+
             result.Playlist = await spotifyAppServices.SpotifyGetTrackIDs(result.Playlist);
             string playlistResult = JsonConvert.SerializeObject(result);
 
@@ -202,7 +204,8 @@
     {
         try
         {
-            string result = await _jsRuntime.InvokeAsync<string>("spotifyGetTracks"); ;
+            string result = await _jsRuntime.InvokeAsync<string>("spotifyGetTracks");
+            _jsRuntime.InvokeVoidAsync("spotifyCreatePlaylistDisplay");
 
             List<string> listSpotifyTrackIds;
             listSpotifyTrackIds = JsonConvert.DeserializeObject<List<string>>(result);
@@ -220,6 +223,7 @@
             string playlistId = await spotifyAppServices.SpotifyCreatePlaylist(PlaylistNameText);
 
             await spotifyAppServices.SpotifyAddTracksToPlaylist(listSpotifyTrackIds, playlistId);
+            _jsRuntime.InvokeVoidAsync("spotifySetCreatedPlaylistDisplay");
             OpenPlaylist(playlistId, PlaylistNameText);
         }
         catch (Exception ex)

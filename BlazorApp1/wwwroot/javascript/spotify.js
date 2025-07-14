@@ -98,9 +98,10 @@ function spotifyAlterString(str) {
 }
 function spotifyProcessChatResponse(jsonData) {
 
-    //console.debug(`spotifyProcessChatResponse: START`);
     const aiGeneratedPlaylist = document.getElementById("ai_GeneratedPlaylist");
     const aiListPlaylistTracks = document.getElementById("ai_ListPlaylistTracks");
+    document.getElementById("input_Prompt").style.display = "none";
+    document.getElementById("input_PlaylistName").style.display = "";
     document.getElementById("btn_CreatePlaylist").style.display = "";
     document.getElementById("btn_SelectAll").style.display = "";
 
@@ -143,6 +144,8 @@ function spotifyShowLoading() {
     document.getElementById("display_Loading").style.display = "";
     document.getElementById("spotifyPlaylistDisplay").style.display = "none";
     document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
+    document.getElementById("input_Prompt").style.display = "none";
+    document.getElementById("btn_SubmitPrompt").style.display = "none";
 }
 
 function spotifyGetTracks() {
@@ -163,6 +166,20 @@ function spotifyGetTracks() {
 
     return JSON.stringify(listTracks);
 }
+
+function spotifyCreatePlaylistDisplay() {
+
+    document.getElementById("aiPrompts").style.display = "none";
+    document.getElementById("ai_GeneratedPlaylist").style.display = "none";
+    document.getElementById("display_CreatingPlaylist").style.display = "";
+    document.getElementById("ai_PlaylistDescription").innerHTML = "";
+    document.getElementById("ai_ListPlaylistTracks").innerHTML = "";
+}
+
+function spotifySetCreatedPlaylistDisplay() {
+    document.getElementById("display_CreatingPlaylist").style.display = "none";
+}
+
 function spotifySelectAll() {
     const aiListPlaylistTracks = document.getElementById("ai_ListPlaylistTracks");
     const childLi = aiListPlaylistTracks.getElementsByTagName("li");
