@@ -223,7 +223,14 @@
             string playlistId = await spotifyAppServices.SpotifyCreatePlaylist(PlaylistNameText);
 
             await spotifyAppServices.SpotifyAddTracksToPlaylist(listSpotifyTrackIds, playlistId);
-            _jsRuntime.InvokeVoidAsync("spotifySetCreatedPlaylistDisplay");
+            
+            _jsRuntime.InvokeVoidAsync("spotifyResetGenerator");
+
+            // Refresh the playlists list
+            List<SpotifyPlaylist> listPlaylistItems = await spotifyAppServices.SpotifyGetPlaylists();
+            SpotifyListPlaylists = listPlaylistItems;
+            StateHasChanged();
+
             OpenPlaylist(playlistId, PlaylistNameText);
         }
         catch (Exception ex)
