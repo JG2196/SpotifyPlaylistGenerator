@@ -1,9 +1,35 @@
 ﻿function spotifyShowPlaylists(bShowPlaylists) {
 
+    const btnUserPlaylists = document.getElementById("btn_UserPlaylists");
+    const btnOpenCreatePlaylist = document.getElementById("btn_OpenCreatePlaylist");
     const spotifyPlaylistsDisplay = document.getElementById("spotifyPlaylistsDisplay");
     const spotifyPlaylistDisplay = document.getElementById("spotifyPlaylistDisplay");
     const aiPrompts = document.getElementById("aiPrompts");
     const btnCreatePlaylist = document.getElementById("btn_CreatePlaylist");
+
+    let arrClasses;
+
+    arrClasses = ["text-white", "bg-orange-300"];
+    for (var i = 0; i < arrClasses.length; i++) {
+        if (!bShowPlaylists) {
+            btnUserPlaylists.classList.remove(arrClasses[i]);
+            btnOpenCreatePlaylist.classList.add(arrClasses[i]);
+        } else {
+            btnUserPlaylists.classList.add(arrClasses[i]);
+            btnOpenCreatePlaylist.classList.remove(arrClasses[i]);
+        }
+    }
+
+    arrClasses = ["text-gray-600", "hover:bg-orange-300", "hover:text-white"];
+    for (var i = 0; i < arrClasses.length; i++) {
+        if (!bShowPlaylists) {
+            btnUserPlaylists.classList.add(arrClasses[i]);
+            btnOpenCreatePlaylist.classList.remove(arrClasses[i]);
+        } else {
+            btnUserPlaylists.classList.remove(arrClasses[i]);
+            btnOpenCreatePlaylist.classList.add(arrClasses[i]);
+        }
+    }
 
     spotifyPlaylistDisplay.style.display = "none";
 
@@ -31,7 +57,7 @@
 //    document.getElementById("user_id").innerText = obj.SpotifyID;
 //}
 function spotifyDisplayNavigation() {
-    document.getElementById("div_Sidebar").style.display = "";
+    document.getElementById("div_Sidebar").style.display = "none";
 }
 function spotifyDisplayPlaylists(jsonListPlaylists) {
     

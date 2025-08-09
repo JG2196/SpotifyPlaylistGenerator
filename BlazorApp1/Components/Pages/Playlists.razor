@@ -27,19 +27,22 @@
         <p class="font-mono text-2xl font-medium text-gray-600" id="user_id" style="float: right !important;margin:8px">@SpotifyAuthUser.DisplayName</p>
     }
 </div>
-
+<div class="flex flex-wrap justify-center items-center" style="margin-top:60px">
+    <button class="font-sans font-bold rounded-md text-white border-2 border-orange-300 w-20 h-8 bg-orange-300 rounded-3xl transition duration-500" id="btn_UserPlaylists" onclick="spotifyShowPlaylists(true)" style="margin-right:8px">Playlists</button>
+    <button class="font-sans font-bold rounded-md text-gray-600 border-2 border-orange-300 w-20 h-8 hover:bg-orange-300 rounded-3xl hover:text-white transition duration-500" id="btn_OpenCreatePlaylist" onclick="spotifyShowPlaylists(false)" style="">Create</button>
+</div>
 <div>
-    <div class="flex flex-wrap justify-center items-center" id="spotifyPlaylistsDisplay" style="width:90%">
+    <div class="flex flex-wrap justify-center items-center" id="spotifyPlaylistsDisplay" style="padding-top:16px;width:100%">
     @if (SpotifyListPlaylists != null)
     {
         foreach (SpotifyPlaylist playlist in SpotifyListPlaylists)
         {
-                <div class="box transform flex flex-col items-center rounded-xl bg-gray-100 shadow-lg duration-150 hover:scale-110 hover:shadow-xl/20 text-center hover:border-2 hover:border-orange-300" @onclick="() => OpenPlaylist(playlist.Id, playlist.Name)" style="width:232px;padding-top:10px;margin:8px;cursor:pointer">
+            <div class="box transform flex flex-col items-center rounded-xl bg-gray-100 shadow-lg duration-150 hover:scale-110 hover:shadow-xl/20 text-center hover:border-2 hover:border-orange-300" @onclick="() => OpenPlaylist(playlist.Id, playlist.Name)" style="width:180px;padding-top:10px;margin:8px;cursor:pointer">
             @if (playlist.Images != null && playlist.Images.Count > 0)
             {
-                <img class="rounded" style="width:200px;height:200px" src="@playlist.Images[0].Url" />
+                <img class="rounded" style="width:160px;height:160px" src="@playlist.Images[0].Url" />
             }
-                <h5 class="text-center" style="max-width:210px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                <h5 class="text-center" style="max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                     <b>@playlist.Name</b>
                 </h5>
             </div>
@@ -105,9 +108,9 @@
     </div>
 </div>
 <script type="text/javascript">
-    document.addEventListener("load", (e) => {
-        document.getElementById("div_Sidebar").style.display = "";
-    })
+    // document.addEventListener("load", (e) => {
+    //     document.getElementById("div_Sidebar").style.display = "none";
+    // })
 </script>
 
 @code {
