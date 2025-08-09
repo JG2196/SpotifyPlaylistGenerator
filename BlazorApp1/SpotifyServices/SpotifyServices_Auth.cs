@@ -187,12 +187,6 @@ namespace BlazorApp1.SpotifyServices
 
                     foreach (SpotifyPlaylist playlist in spotifyPlaylists.Items)
                     {
-                        string shortName = playlist.Name;
-                        if (shortName.Length > 20)
-                        {
-                            shortName = SpotifyShortName(playlist.Name);
-                        }
-                        playlist.ShortName = shortName;
                         listPlaylistItems.Add(playlist);
                     }
 
@@ -555,21 +549,6 @@ namespace BlazorApp1.SpotifyServices
                 throw;
             }
             Console.WriteLine($"SpotifyAddTracksToPlaylist: Successfully added {tracks.Count} tracks to playlist");
-        }
-        private string SpotifyShortName(string name)
-        {
-            string? shortName = null;
-
-            try
-            {
-                shortName = name.Substring(0, 20) + "...";
-                //Console.WriteLine("SpotifyShortName shortName: " + shortName);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("SpotifyShortName ex: " + ex.Message);
-            }
-            return shortName;
         }
         private string SpotifyGenTrackTime(int ms)
         {

@@ -71,7 +71,6 @@ function spotifyDisplayPlaylists(jsonListPlaylists) {
         elmB.innerText = spotifyAlterString(obj[index].Name);
         elmHeading.appendChild(elmB);
         elmDiv.appendChild(elmHeading);
-
         spotifyPlaylistsDisplay.appendChild(elmDiv);
     }
 }

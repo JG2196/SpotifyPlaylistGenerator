@@ -30,7 +30,6 @@
         public string Id { get; set; }
         public List<PlaylistImage> Images { get; set; }
         public string Name { get; set; }
-        public string ShortName { get; set; }
         public PlaylistOwner Owner { get; set; }
         public PlaylistTracks Tracks { get; set; }
     }

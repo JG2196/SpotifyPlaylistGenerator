@@ -20,26 +20,28 @@
 
 <PageTitle>Playlists</PageTitle>
 
-<div class="w3-bar">
-    <button class="w3-bar-item w3-right" @onclick="AuthorizeSignOut">Spotify sign out</button>
+<div>
+    <button class="font-sans text-lg font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:rounded-3xl hover:text-white transition duration-500" style=" float: right !important" @onclick="AuthorizeSignOut">Sign out</button>
     @if (SpotifyAuthUser != null)
     {
-        <h5 class="w3-right" style="margin:8px"><b id="user_id">@SpotifyAuthUser.DisplayName</b></h5>
+        <p class="font-mono text-2xl font-medium text-gray-600" id="user_id" style="float: right !important;margin:8px">@SpotifyAuthUser.DisplayName</p>
     }
 </div>
 
 <div>
-    <div class="w3-bar" id="spotifyPlaylistsDisplay">
+    <div class="flex flex-wrap justify-center items-center" id="spotifyPlaylistsDisplay" style="width:90%">
     @if (SpotifyListPlaylists != null)
     {
         foreach (SpotifyPlaylist playlist in SpotifyListPlaylists)
         {
-            <div class="w3-card w3-bar-item w3-round-xlarge" @onclick="() => OpenPlaylist(playlist.Id, playlist.Name)" style="padding-top:16px;margin:8px;cursor:pointer">
-                @if (playlist.Images != null && playlist.Images.Count > 0)
-                {
-                    <img class="w3-round-large" style="width:200px;height:200px" src="@playlist.Images[0].Url" />
-                }
-                <h5 style="text-align:right"><b>@playlist.ShortName</b></h5>
+                <div class="box transform flex flex-col items-center rounded-xl bg-gray-100 shadow-lg duration-150 hover:scale-110 hover:shadow-xl/20 text-center hover:border-2 hover:border-orange-300" @onclick="() => OpenPlaylist(playlist.Id, playlist.Name)" style="width:232px;padding-top:10px;margin:8px;cursor:pointer">
+            @if (playlist.Images != null && playlist.Images.Count > 0)
+            {
+                <img class="rounded" style="width:200px;height:200px" src="@playlist.Images[0].Url" />
+            }
+                <h5 class="text-center" style="max-width:210px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                    <b>@playlist.Name</b>
+                </h5>
             </div>
         }
     }
@@ -102,6 +104,11 @@
         <ol id="ai_ListPlaylistTracks"></ol>
     </div>
 </div>
+<script type="text/javascript">
+    document.addEventListener("load", (e) => {
+        document.getElementById("div_Sidebar").style.display = "";
+    })
+</script>
 
 @code {
     public bool bFoundUser = false;
