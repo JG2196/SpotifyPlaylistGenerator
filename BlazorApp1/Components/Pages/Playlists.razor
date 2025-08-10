@@ -28,10 +28,16 @@
     }
 </div>
 <div class="flex flex-wrap justify-center items-center" style="margin-top:60px">
-    <button class="font-sans font-bold rounded-md text-white border-2 border-orange-300 w-20 h-8 bg-orange-300 rounded-3xl transition duration-500" id="btn_UserPlaylists" onclick="spotifyShowPlaylists(true)" style="margin-right:8px">Playlists</button>
-    <button class="font-sans font-bold rounded-md text-gray-600 border-2 border-orange-300 w-20 h-8 hover:bg-orange-300 rounded-3xl hover:text-white transition duration-500" id="btn_OpenCreatePlaylist" onclick="spotifyShowPlaylists(false)" style="">Create</button>
+    <button class="font-sans font-bold rounded-full text-white border-2 border-orange-300 w-20 h-8 bg-orange-300 rounded-3xl transition duration-500" id="btn_UserPlaylists" onclick="spotifyShowPlaylists(true)" style="margin-right:8px">Playlists</button>
+    <button class="font-sans font-bold rounded-full text-gray-600 border-2 border-orange-300 w-20 h-8 hover:bg-orange-300 rounded-3xl hover:text-white transition duration-500" id="btn_OpenCreatePlaylist" onclick="spotifyShowPlaylists(false)" style="">Create</button>
 </div>
 <div>
+    <div class="flex flex-wrap justify-center items-center" style="margin-top:64px" id="circleLoader">
+        <svg class="animate-spin h-32 w-32 text-blue-500" fill="none" viewBox="0 0 24 24">
+            <circle class="text-orange-300 opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <circle class="text-orange-300" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"></circle>
+        </svg>
+    </div>
     <div class="flex flex-wrap justify-center items-center" id="spotifyPlaylistsDisplay" style="padding-top:16px;width:100%">
     @if (SpotifyListPlaylists != null)
     {
@@ -47,6 +53,9 @@
                 </h5>
             </div>
         }
+        <script type="text/javascript">
+            document.getElementById("circleLoader").style.display = "none";
+        </script>
     }
     </div>
     
