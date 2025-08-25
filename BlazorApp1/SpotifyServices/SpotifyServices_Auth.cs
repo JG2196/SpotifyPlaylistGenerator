@@ -251,7 +251,7 @@ namespace BlazorApp1.SpotifyServices
                 }
 
                 string playlistUrl = "https://api.spotify.com/v1/playlists/" + playlistId;
-                string queryFields = "description,id,images(url),tracks(next,total,items(track(album(name),artists(name),duration_ms,id,name)))";
+                string queryFields = "description,external_urls(spotify),id,images(url),tracks(next,total,items(track(album(name),artists(name),duration_ms,id,name)))";
 
                 var builder = new UriBuilder(playlistUrl);
                 var query = $"fields={Uri.UnescapeDataString(queryFields)}";
@@ -261,6 +261,8 @@ namespace BlazorApp1.SpotifyServices
 
                 bool bPagingComplete = false;
                 bool nextPage = false;
+                int msPlaylistDuration = 0;
+
                 while (!bPagingComplete)
                 {
                     SpotifyPlaylist playlistResult = null;
@@ -311,9 +313,21 @@ namespace BlazorApp1.SpotifyServices
                 {
                     if (selectedTrack.Track != null)
                     {
+                        msPlaylistDuration += selectedTrack.Track.Duration_ms;
                         selectedTrack.Track.TrackTime = SpotifyGenTrackTime(selectedTrack.Track.Duration_ms);
                     }
                 }
+
+                TimeSpan t = TimeSpan.FromMilliseconds(msPlaylistDuration);
+                int hours = t.Hours;
+                int minutes = t.Minutes;
+
+                string playlistDuration = "0min";
+
+                if (hours > 0 && minutes > 0) { playlistDuration = $"{hours}h {minutes}min"; }
+                else if (hours > 0 && minutes == 0) { playlistDuration = $"{hours}h"; }
+                if (hours == 0 && minutes > 0) { playlistDuration = $"{minutes}min"; }
+                playlist.PlaylistDuration = playlistDuration;
 
             }
             catch (Exception ex)

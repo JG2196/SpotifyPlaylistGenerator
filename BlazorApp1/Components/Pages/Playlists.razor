@@ -61,7 +61,7 @@
     
     <div id="spotifyPlaylistDisplay" style="display:none">
         <h1><b id="playlistName"></b></h1>
-        <div style="width:50%;float:left">
+        <div style="width:45vw;float:left">
             <ol>
             @if (SpotifySelectedPlaylist != null)
             {
@@ -85,10 +85,45 @@
             }
             </ol>
         </div>
-        <div style="width:50%;float:right">
+        <div style="width:45vw;float:right;padding-left:6.25vw">
         @if (SpotifySelectedPlaylist != null)
         {
-            <img class="w3-round-large" style="width:90%" src="@SpotifySelectedPlaylist.Images[0].Url" />
+            <div style="width:30vw;margin-bottom">
+                    <h2 class="text-center" style="float:left;width:22vw;height:44px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                    <b>@SpotifySelectedPlaylist.Name</b>
+                </h2>
+                    <button class="font-sans text-lg font-bold rounded-3xl text-gray-600 border-2 border-orange-300 w-12
+                                                   h-12 hover:bg-orange-300 hover:rounded-3xl hover:w-28 hover:text-white transition-w-28 duration-300" style="float:right;margin-top:4px" onmouseover="testChangeInner(this, true)" onmouseout="testChangeInner(this, false)" onclick=" window.open('@SpotifySelectedPlaylist.External_Urls.Spotify','_blank')">
+                        &rarr;
+                    </button>
+            </div>
+            <div style="width:30vw">
+                <img class="rounded-3xl" src="@SpotifySelectedPlaylist.Images[0].Url" />
+            </div>
+        
+
+            <div class="box rounded-xl bg-zinc-300" style="width:30vw;padding:8px; margin-top:8px">
+                <table class="font-mono text-gray-950">
+                    <tr>
+                        <td class="font-semibold" style="text-align:right">Name:</td>
+                        <td id="infoName">@SpotifySelectedPlaylist.Name</td>
+                    </tr>
+                    @if (SpotifySelectedPlaylist.Description != null) {
+                        <tr>
+                            <td class="font-semibold" id="playlistDescription" style="text-align:right">Description:</td>
+                            <td id="infoDescription">@SpotifySelectedPlaylist.Description</td>
+                        </tr>
+                    }
+                    <tr>
+                        <td class="font-semibold" style="text-align:right">No of tracks:</td>
+                        <td id="infoTrackLength">@SpotifySelectedPlaylist.Tracks.Items.Count</td>
+                    </tr>
+                    <tr>
+                        <td class="font-semibold" style="text-align:right">Duration:</td>
+                        <td id="infoDuration">@SpotifySelectedPlaylist.PlaylistDuration</td>
+                    </tr>
+                </table>
+            </div>
         }
         </div>
     </div>
@@ -180,8 +215,10 @@
         try
         {
             Console.WriteLine("OpenPlaylist id: " + id);
-            await _jsRuntime.InvokeVoidAsync("spotifyOpenPlaylist", playlistName);
+            //await _jsRuntime.InvokeVoidAsync("spotifyOpenPlaylist", playlistName);
+            _jsRuntime.InvokeVoidAsync("spotifyOpenPlaylist");
             SpotifySelectedPlaylist = await spotifyAppServices.SpotifyGetPlaylist(id);
+            SpotifySelectedPlaylist.Name = playlistName;
             StateHasChanged();
         }
         catch (Exception ex)

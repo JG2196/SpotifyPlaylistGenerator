@@ -32,6 +32,11 @@
         public string Name { get; set; }
         public PlaylistOwner Owner { get; set; }
         public PlaylistTracks Tracks { get; set; }
+        public Urls External_Urls { get; set; }
+        public string PlaylistDuration { get; set; } = string.Empty;
+    }
+    public class Urls { 
+        public string Spotify { get; set; }
     }
     public class PlaylistImage
     {

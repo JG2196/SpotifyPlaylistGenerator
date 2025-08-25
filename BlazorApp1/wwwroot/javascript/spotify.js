@@ -100,12 +100,19 @@ function spotifyDisplayPlaylists(jsonListPlaylists) {
         spotifyPlaylistsDisplay.appendChild(elmDiv);
     }
 }
-function spotifyOpenPlaylist(playlistName) {
+function spotifyOpenPlaylist() {
     
     document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
     document.getElementById("spotifyPlaylistDisplay").style.display = "";
-    document.getElementById("playlistName").innerText = playlistName;
+    //document.getElementById("playlistName").innerText = playlistName;
 
+}
+function testChangeInner(elm, bEnter) {
+    if (bEnter) {
+        elm.innerHTML = "Spotify";
+    } else {
+        elm.innerHTML = "&rarr;";
+    }
 }
 //function testAsyncTask() {
 //    console.debug("testAsyncTask START!");
