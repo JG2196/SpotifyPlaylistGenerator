@@ -60,8 +60,13 @@
     </div>
     
     <div id="spotifyPlaylistDisplay" style="display:none">
-        <h1><b id="playlistName"></b></h1>
-        <div style="width:45vw;float:left">
+        <div class="flex flex-wrap justify-center items-center" style="margin-top:64px" id="circleLoader_Playlist">
+            <svg class="animate-spin h-32 w-32 text-blue-500" fill="none" viewBox="0 0 24 24">
+                <circle class="text-orange-300 opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <circle class="text-orange-300" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"></circle>
+            </svg>
+        </div>
+        <div class="border-3 border-solid border-orange-300 box rounded-xl bg-zinc-300" id="playlist_Tracks" style="width:45vw;height:80vh;margin-top:30px;float:left;overflow-y:scroll">
             <ol>
             @if (SpotifySelectedPlaylist != null)
             {
@@ -69,14 +74,13 @@
                 {
                     @if (track.Track != null)
                     {
-                        <li style="list-style-type:none">
+                            <li style="list-style-type:none;border-bottom:2px solid rgba(0, 0, 0, 0.1)">
                         <div class="w3-bar">
-                            <div class="w3-bar-item">
-                                <h5>@track.Track.Name - @track.Track.TrackTime</h5>
-                                <h5 style="float:left;margin-top:0px">@track.Track.Artists[0].Name - @track.Track.Album.Name</h5>
-                            </div>
-                            <div class="w3-bar-item" style="float:right">
-                                <button class="w3-button w3-red w3-round-xxlarge w3-bar-item">x</button>
+                            <div class="w3-bar-item w3-bar-item">
+                                <h5 style="width:42vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><b>@track.Track.Name</b></h5>
+                                <h5 style="width:42vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;float:left;margin-top:0px">@track.Track.Artists[0].Name</h5>
+                                <br />
+                                <h6 style="height:24px;width:42vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@track.Track.Album.Name</h6>
                             </div>
                         </div>
                         </li>
@@ -85,15 +89,14 @@
             }
             </ol>
         </div>
-        <div style="width:45vw;float:right;padding-left:6.25vw">
+        <div id="playlist_Info" style="width:45vw;float:right;padding-left:6.25vw">
         @if (SpotifySelectedPlaylist != null)
         {
             <div style="width:30vw;margin-bottom">
                     <h2 class="text-center" style="float:left;width:22vw;height:44px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                     <b>@SpotifySelectedPlaylist.Name</b>
                 </h2>
-                    <button class="font-sans text-lg font-bold rounded-3xl text-gray-600 border-2 border-orange-300 w-12
-                                                   h-12 hover:bg-orange-300 hover:rounded-3xl hover:w-28 hover:text-white transition-w-28 duration-300" style="float:right;margin-top:4px" onmouseover="testChangeInner(this, true)" onmouseout="testChangeInner(this, false)" onclick=" window.open('@SpotifySelectedPlaylist.External_Urls.Spotify','_blank')">
+                    <button class="font-sans text-lg font-bold rounded-3xl text-gray-600 border-2 border-orange-300 w-12 h-12 hover:bg-orange-300 hover:rounded-3xl hover:w-28 hover:text-white transition-w-28 duration-300" style="float:right;margin-top:4px" onmouseover="testChangeInner(this, true)" onmouseout="testChangeInner(this, false)" onclick=" window.open('@SpotifySelectedPlaylist.External_Urls.Spotify','_blank')">
                         &rarr;
                     </button>
             </div>
@@ -102,7 +105,7 @@
             </div>
         
 
-            <div class="box rounded-xl bg-zinc-300" style="width:30vw;padding:8px; margin-top:8px">
+            <div class="box rounded-xl bg-zinc-300" style="width:30vw;padding:8px; margin-top:8px;margin-bottom:8px">
                 <table class="font-mono text-gray-950">
                     <tr>
                         <td class="font-semibold" style="text-align:right">Name:</td>
@@ -128,9 +131,10 @@
         </div>
     </div>
 
-    <div id="aiPrompts" style="display:none">
-        <h1 class="w3-bar-item">Search</h1>
-        <input id="input_Prompt" @bind="PromptText" placeholder="Enter text here" style="width:400px" />
+    <div id="aiPrompts" style="display:none; text-align:center;padding-top: 16px">
+        <h1 class="w3-bar-item">Create a vibe</h1>
+        <textarea type="text" id="pillInput" class="input rounded-xl border-2 border-solid border-orange-300" onkeyup="updateTextArea(this)" placeholder="What are you feeling?" style="transition: height 0.2s ease ;width: 45vw; resize:none;overflow:hidden;box-sizing:border-box;line-height:1.4;padding:4px;inherit; min-height: 36px;"></textarea>
+        <input id="input_Prompt" @bind="PromptText" placeholder="What are you feeling?" style="width:400px" />
         <input id="input_PlaylistName" @bind="PlaylistNameText" placeholder="Enter name..." style="width:400px;display:none" />
 
         <button id="btn_SubmitPrompt" @onclick="SubmitPrompt">Submit</button>
@@ -216,10 +220,11 @@
         {
             Console.WriteLine("OpenPlaylist id: " + id);
             //await _jsRuntime.InvokeVoidAsync("spotifyOpenPlaylist", playlistName);
-            _jsRuntime.InvokeVoidAsync("spotifyOpenPlaylist");
+            await _jsRuntime.InvokeVoidAsync("spotifyLodaingPlaylist", true);
             SpotifySelectedPlaylist = await spotifyAppServices.SpotifyGetPlaylist(id);
             SpotifySelectedPlaylist.Name = playlistName;
             StateHasChanged();
+            await _jsRuntime.InvokeVoidAsync("spotifyLodaingPlaylist", false);
         }
         catch (Exception ex)
         {

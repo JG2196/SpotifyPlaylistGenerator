@@ -292,8 +292,8 @@ namespace BlazorApp1.SpotifyServices
                         {
                             foreach (TrackItem track in playlistResult.Tracks.Items)
                             {
-                                string time = SpotifyGenTrackTime(track.Track.Duration_ms);
-                                Console.WriteLine(time);
+                                //string time = SpotifyGenTrackTime(track.Track.Duration_ms);
+                                //Console.WriteLine(time);
                                 //convert ms to seconds
                                 playlist.Tracks.Items.Add(track);
                             }
@@ -314,7 +314,7 @@ namespace BlazorApp1.SpotifyServices
                     if (selectedTrack.Track != null)
                     {
                         msPlaylistDuration += selectedTrack.Track.Duration_ms;
-                        selectedTrack.Track.TrackTime = SpotifyGenTrackTime(selectedTrack.Track.Duration_ms);
+                        //selectedTrack.Track.TrackTime = SpotifyGenTrackTime(selectedTrack.Track.Duration_ms);
                     }
                 }
 
@@ -568,7 +568,7 @@ namespace BlazorApp1.SpotifyServices
         {
             TimeSpan t = TimeSpan.FromMilliseconds(ms);
 
-            string time = $"{t.Minutes}:{t.Seconds}";
+            string time = $"{t.Minutes}:{t.Seconds:D2}";
 
             return time;
 

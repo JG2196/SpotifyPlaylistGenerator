@@ -100,19 +100,27 @@ function spotifyDisplayPlaylists(jsonListPlaylists) {
         spotifyPlaylistsDisplay.appendChild(elmDiv);
     }
 }
-function spotifyOpenPlaylist() {
-    
-    document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
-    document.getElementById("spotifyPlaylistDisplay").style.display = "";
-    //document.getElementById("playlistName").innerText = playlistName;
-
+function spotifyLodaingPlaylist(bLoading) {
+    if (bLoading) {
+        document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
+        document.getElementById("spotifyPlaylistDisplay").style.display = "";
+        document.getElementById("circleLoader_Playlist").style.display = "";
+        document.getElementById("playlist_Tracks").style.display = "none";
+        document.getElementById("playlist_Info").style.display = "none";
+    } else {
+        document.getElementById("circleLoader_Playlist").style.display = "none";
+        document.getElementById("playlist_Tracks").style.display = "";
+        document.getElementById("playlist_Info").style.display = "";
+    }
 }
 function testChangeInner(elm, bEnter) {
-    if (bEnter) {
-        elm.innerHTML = "Spotify";
-    } else {
-        elm.innerHTML = "&rarr;";
-    }
+    if (bEnter) { elm.innerHTML = "Spotify"; }
+    else { elm.innerHTML = "&rarr;"; }
+}
+
+function updateTextArea(inpElm) {
+    inpElm.style.height = "auto"; // reset
+    inpElm.style.height = inpElm.scrollHeight + "px";
 }
 //function testAsyncTask() {
 //    console.debug("testAsyncTask START!");
