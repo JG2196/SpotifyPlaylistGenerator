@@ -132,27 +132,30 @@
     </div>
 
     <div id="aiPrompts" style="display:none; text-align:center;padding-top: 16px">
-        <h1 class="w3-bar-item">Create a vibe</h1>
-        <textarea type="text" id="pillInput" class="input rounded-xl border-2 border-solid border-orange-300" onkeyup="updateTextArea(this)" placeholder="What are you feeling?" style="transition: height 0.2s ease ;width: 45vw; resize:none;overflow:hidden;box-sizing:border-box;line-height:1.4;padding:4px;inherit; min-height: 36px;"></textarea>
-        <input id="input_Prompt" @bind="PromptText" placeholder="What are you feeling?" style="width:400px" />
-        <input id="input_PlaylistName" @bind="PlaylistNameText" placeholder="Enter name..." style="width:400px;display:none" />
-
-        <button id="btn_SubmitPrompt" @onclick="SubmitPrompt">Submit</button>
-        <button id="btn_SelectAll" onclick="spotifySelectAll()" style="display:none">Select All</button>
-        <button id="btn_CreatePlaylist" @onclick="CreatePlaylist" style="display:none">Create Playlist</button>
-    </div>
-    <div class="w3-center" id="display_Loading" style="display:none">
-        <h1>Loading...</h1>
+        <h1 style="margin-bottom:16px;margin-top:0">Create a vibe</h1>
+        <div class="flex flex-wrap justify-center items-center" style="margin-top:64px;display:none" id="circleLoader_GenPlaylist">
+            <svg class="animate-spin h-32 w-32 text-blue-500" fill="none" viewBox="0 0 24 24">
+                <circle class="text-orange-300 opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <circle class="text-orange-300" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"></circle>
+            </svg>
+        </div>
+        <textarea type="text" id="input_Prompt" @bind="PromptText" class="input rounded-xl border-2 border-solid border-orange-300" onclick="updateTextArea(this)" maxlength="300" placeholder="What are you feeling?" style="height:36px;width: 25vw; resize: none; overflow: hidden; box-sizing: border-box;padding: 4px;transition:ease-in 0.4s;text-align:center"></textarea>
+        <input class="input rounded-lg border-2 border-solid border-orange-300" id="input_PlaylistName" @bind="PlaylistNameText" placeholder="Enter name..." maxlength="20" style="width:400px;display:none;text-align:center" />
+        <br />
+        <button class="font-sans text-lg font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" id="btn_SubmitPrompt" style="margin-top:16px" @onclick="SubmitPrompt">Search</button>
+        <button class="font-sans text-base font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" id="btn_CreatePlaylist" @onclick="CreatePlaylist" style="display:none;margin-top:16px">Create Playlist</button>
     </div>
     <div class="w3-center" id="display_CreatingPlaylist" style="display:none">
         <h1>Creating Playlist...</h1>
     </div>
-    <br />
-    <div id="ai_GeneratedPlaylist" style="display:none">
-        <br />
-        <h3 id="ai_PlaylistDescription"></h3>
-        <br />
+    <div class="border-3 border-solid border-orange-300 box rounded-xl bg-zinc-300" id="ai_GeneratedPlaylist" style="display:none;width:45vw;height:80vh;margin-top:16px;float:left;overflow-y:scroll">
+        <button class="font-sans text-lg font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" id="btn_SelectAll" onclick="spotifySelectAll()" style="margin: 16px 0 8px 16px">Select All</button>
         <ol id="ai_ListPlaylistTracks"></ol>
+    </div>
+    <div style="display:none;width:45vw;float:right;padding-left:6.25vw" id="ai_GeneratedPlaylistInfo">
+        <input class="input rounded-lg border-2 border-solid border-orange-300" id="input_PlaylistName" placeholder="Enter name..." maxlength="20" style="width: 30vw; height:45px; text-align: center;">
+        <button class="font-sans text-base font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" id="btn_CreatePlaylist" style="margin-top: 16px;">Create Playlist</button>
+        <h3 id="ai_PlaylistDescription" style="margin-left:16px"></h3>
     </div>
 </div>
 <script type="text/javascript">

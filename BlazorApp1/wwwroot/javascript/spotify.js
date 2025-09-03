@@ -119,8 +119,8 @@ function testChangeInner(elm, bEnter) {
 }
 
 function updateTextArea(inpElm) {
-    inpElm.style.height = "auto"; // reset
-    inpElm.style.height = inpElm.scrollHeight + "px";
+    inpElm.style.height = "105px"; // reset
+    inpElm.style.width = "50vw";
 }
 //function testAsyncTask() {
 //    console.debug("testAsyncTask START!");
@@ -140,6 +140,7 @@ function spotifyAlterString(str) {
 function spotifyProcessChatResponse(jsonData) {
 
     const aiGeneratedPlaylist = document.getElementById("ai_GeneratedPlaylist");
+    const aiGeneratedPlaylistInfo = document.getElementById("ai_GeneratedPlaylistInfo");
     const aiListPlaylistTracks = document.getElementById("ai_ListPlaylistTracks");
     document.getElementById("input_Prompt").style.display = "none";
     document.getElementById("input_PlaylistName").style.display = "";
@@ -156,33 +157,49 @@ function spotifyProcessChatResponse(jsonData) {
         let elmLi = document.createElement("li");
         let elmInput = document.createElement("input");
         let elmA = document.createElement("a");
+        let elmDiv = document.createElement("div");
+        let elmLabel = document.createElement("label");
+        let elmH = document.createElement("h5");
+        let elmB = document.createElement("b");
 
         elmLi.setAttribute("spotify_id", obj.Playlist[index].Spotify_Id);
         elmLi.style.listStyleType = "none";
+        elmLi.style.borderBottom = "2px solid rgba(0,0,0,0.1)";
 
-        elmInput.classList.add("w3-check");
         elmInput.type = "checkbox";
         elmInput.id = `check_${obj.Playlist[index].Spotify_Id}`;
+        elmInput.style.marginLeft = "16px";
         elmInput.checked = true;
+        elmDiv.appendChild(elmInput);
 
-        elmA.innerText = `${obj.Playlist[index].Title} - ${obj.Playlist[index].Artist}`;
+        elmLabel.style.paddingLeft = "8px";
 
-        elmLi.appendChild(elmInput);
-        elmLi.appendChild(elmA);
-        
+        elmB.innerText = obj.Playlist[index].Title;
+        elmH.appendChild(elmB);
+        elmLabel.appendChild(elmH);
+        elmDiv.appendChild(elmLabel);
+
+        elmH = document.createElement("h5");
+        elmH.style.marginLeft = "38px";
+        elmH.innerText = obj.Playlist[index].Artist;
+
+        elmDiv.appendChild(elmH);
+        elmLi.appendChild(elmDiv);
         aiListPlaylistTracks.appendChild(elmLi);
     }
 
-    const arrIDsToHide = ["display_Loading", "spotifyPlaylistDisplay", "spotifyPlaylistsDisplay"];
+    const arrIDsToHide = ["circleLoader_GenPlaylist", "spotifyPlaylistDisplay", "spotifyPlaylistsDisplay"];
 
     for (let i = 0; i < arrIDsToHide.length; i++) {
         document.getElementById(arrIDsToHide[i]).style.display = "none";
     }
     aiGeneratedPlaylist.style.display = "";
+    aiGeneratedPlaylistInfo.style.display = "";
 }
 
 function spotifyShowLoading() {
-    document.getElementById("display_Loading").style.display = "";
+    /*document.getElementById("display_Loading").style.display = "";*/
+    document.getElementById("circleLoader_GenPlaylist").style.display = "";
     document.getElementById("spotifyPlaylistDisplay").style.display = "none";
     document.getElementById("spotifyPlaylistsDisplay").style.display = "none";
     document.getElementById("input_Prompt").style.display = "none";
@@ -212,6 +229,7 @@ function spotifyCreatePlaylistDisplay() {
 
     document.getElementById("aiPrompts").style.display = "none";
     document.getElementById("ai_GeneratedPlaylist").style.display = "none";
+    document.getElementById("ai_GeneratedPlaylistInfo").style.display = "none";
     document.getElementById("display_CreatingPlaylist").style.display = "";
     document.getElementById("ai_PlaylistDescription").innerHTML = "";
     document.getElementById("ai_ListPlaylistTracks").innerHTML = "";
@@ -244,6 +262,7 @@ function spotifyResetGenerator() {
     const displayLoading = document.getElementById("display_Loading");
     const displayCreatingPlaylist = document.getElementById("display_CreatingPlaylist");
     const aiGeneratedPlaylist = document.getElementById("ai_GeneratedPlaylist");
+    const aiGeneratedPlaylistInfo = document.getElementById("ai_GeneratedPlaylistInfo");
     const aiPlaylistDescription = document.getElementById("ai_PlaylistDescription");
     const aiListPlaylistTracks = document.getElementById("ai_ListPlaylistTracks");
 
@@ -254,7 +273,7 @@ function spotifyResetGenerator() {
     aiPlaylistDescription.innerHTML = "";
     aiListPlaylistTracks.innerHTML = "";
 
-    let arrAiElm = [aiPrompts, inputPlaylistName, btnSelectAll, btnCreatePlaylist, displayLoading, displayCreatingPlaylist, aiGeneratedPlaylist];
+    let arrAiElm = [aiPrompts, inputPlaylistName, btnSelectAll, btnCreatePlaylist, displayLoading, displayCreatingPlaylist, aiGeneratedPlaylist, aiGeneratedPlaylistInfo];
     for (var i = 0; i < arrAiElm.length; i++) {
         arrAiElm[i].style.display = "none";
     }
