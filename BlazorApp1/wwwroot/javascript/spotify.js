@@ -41,6 +41,7 @@
         spotifyPlaylistsDisplay.style.display = "";
         aiPrompts.style.display = "none";
         btnCreatePlaylist.style.display = "none";
+        
         spotifyResetGenerator();
     }
 }
@@ -167,12 +168,15 @@ function spotifyProcessChatResponse(jsonData) {
         elmLi.style.borderBottom = "2px solid rgba(0,0,0,0.1)";
 
         elmInput.type = "checkbox";
+        elmInput.style.cursor = "pointer";
         elmInput.id = `check_${obj.Playlist[index].Spotify_Id}`;
         elmInput.style.marginLeft = "16px";
         elmInput.checked = true;
         elmDiv.appendChild(elmInput);
 
+        elmLabel.style.cursor = "pointer";
         elmLabel.style.paddingLeft = "8px";
+        elmLabel.setAttribute("for", `check_${obj.Playlist[index].Spotify_Id}`);
 
         elmB.innerText = obj.Playlist[index].Title;
         elmH.appendChild(elmB);
@@ -259,7 +263,7 @@ function spotifyResetGenerator() {
     const btnSubmitPrompt = document.getElementById("btn_SubmitPrompt");
     const btnSelectAll = document.getElementById("btn_SelectAll");
     const btnCreatePlaylist = document.getElementById("btn_CreatePlaylist");
-    const displayLoading = document.getElementById("display_Loading");
+    const circleLoader = document.getElementById("circleLoader_GenPlaylist");
     const displayCreatingPlaylist = document.getElementById("display_CreatingPlaylist");
     const aiGeneratedPlaylist = document.getElementById("ai_GeneratedPlaylist");
     const aiGeneratedPlaylistInfo = document.getElementById("ai_GeneratedPlaylistInfo");
@@ -273,8 +277,14 @@ function spotifyResetGenerator() {
     aiPlaylistDescription.innerHTML = "";
     aiListPlaylistTracks.innerHTML = "";
 
-    let arrAiElm = [aiPrompts, inputPlaylistName, btnSelectAll, btnCreatePlaylist, displayLoading, displayCreatingPlaylist, aiGeneratedPlaylist, aiGeneratedPlaylistInfo];
+    let arrAiElm = [aiPrompts, inputPlaylistName, btnSelectAll, btnCreatePlaylist, circleLoader, displayCreatingPlaylist, aiGeneratedPlaylist, aiGeneratedPlaylistInfo];
+
+    console.debug("spotifyResetGenerator");
+    console.debug("spotifyResetGenerator: arrAiElm.length = " + arrAiElm.length);
+
+
     for (var i = 0; i < arrAiElm.length; i++) {
+        console.debug("spotifyResetGenerator: i = " + i);
         arrAiElm[i].style.display = "none";
     }
 
