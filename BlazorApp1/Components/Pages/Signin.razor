@@ -10,9 +10,10 @@
 
 <PageTitle>Sign in</PageTitle>
 
-<h3>Spotify Playlist Creator</h3>
-<button @onclick="SpotifySignin">Sign in</button>
-
+<div style="text-align:center;padding:35vh">
+    <p class="font-mono text-3xl font-medium text-gray-600" style="margin-bottom:16px">Spotify Playlist Creator</p>
+    <button class="font-sans text-lg font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" @onclick="SpotifySignin">Sign in</button>
+</div>
 <script type="text/javascript">
     window.addEventListener("load", () => {
          document.getElementById("div_Sidebar").style.display = "none";
@@ -27,7 +28,6 @@
         try
         {
             SpotifyServices_Signin SpotifyServicesSignin = new SpotifyServices_Signin(_config, _httpClient, _tokenService);
-
             spotifyAuthUrl = SpotifyServicesSignin.SpotifySigninAuth();
         }
         catch (Exception ex)

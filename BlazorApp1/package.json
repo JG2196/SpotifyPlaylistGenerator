@@ -1,0 +1,12 @@
+{
+  "name": "blazorapp1",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "css:build": "npx tailwindcss -i ./wwwroot/Styles/tailwind.css -o ./wwwroot/styles.css --watch"
+  },
+  "devDependencies": {
+    "eslint": "^9.32.0",
+    "tailwindcss": "^3.3.3"
+  }
+}

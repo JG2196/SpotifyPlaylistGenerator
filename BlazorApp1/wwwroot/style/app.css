@@ -49,3 +49,131 @@ h1:focus {
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
 }
+
+@media only screen and (max-width: 450px) {
+    .playlists {
+        width: 120px;
+        padding-top: 10px;
+        margin: 8px;
+        cursor: pointer;
+    }
+    .playlists-image {
+        width: 110px;
+        height: 110px;
+    }
+    .playlists-heading {
+        max-width: 110px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .playlist-info {
+        width: 100%;
+    }
+    .playlist-info-div {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+    .playlist-info-div-two {
+        width: 50%;
+        margin-left: 25%;
+    }
+    .playlist-info-div-three {
+        width: 100%;
+        padding: 8px;
+        margin-top: 8px;
+        margin-bottom: 8px;
+    }
+    .playlist-info-h {
+        width: 75vw;
+        height: 44px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .playlist-tracks {
+        width: 100%;
+        height: 80vh;
+        margin-top: 30px;
+        overflow-y: scroll;
+    }
+    .ai-playlist-name {
+        width: 70%;
+        height: 45px;
+        text-align: center;
+    }
+    .ai-gen-playlist {
+        width: 100%;
+        height: 80vh;
+        margin: 16px 0px;
+        float: left;
+        overflow-y: scroll;
+    }
+}
+@media only screen and (min-width: 451px) {
+    .playlists {
+        width: 180px;
+        padding-top: 10px;
+        margin:8px;
+        cursor:pointer;
+    }
+    .playlists-image {
+        width: 160px;
+        height: 160px;
+    }
+    .playlists-heading {
+        max-width: 170px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .playlist-info {
+        width: 45vw;
+        float: right;
+        padding-left: 6.25vw;
+    }
+    .playlist-info-div {
+        width: 30vw;
+        margin-bottom:8px;
+    }
+    .playlist-info-div-two {
+        width: 30vw;
+    }
+    .playlist-info-div-three {
+        width: 30vw;
+        padding: 8px;
+        margin-top: 8px;
+        margin-bottom: 8px;
+    }
+    .playlist-info-h {
+        float: left;
+        width: 22vw;
+        height: 44px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .playlist-tracks {
+        width: 45vw;
+        height: 80vh;
+        margin-top: 30px;
+        float: left;
+        overflow-y: scroll;
+    }
+    .ai-playlist-info {
+        width: 45vw;
+        float: right;
+    }
+    .ai-playlist-name {
+        width: 30vw;
+        height: 45px;
+        text-align: center;
+    }
+    .ai-gen-playlist {
+        width: 45vw;
+        height: 80vh;
+        margin: 16px 0 16px 0;
+        float: left;
+        overflow-y: scroll;
+    }
+}

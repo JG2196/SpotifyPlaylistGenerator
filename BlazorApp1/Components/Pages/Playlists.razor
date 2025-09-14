@@ -11,7 +11,6 @@
 @using System.Text.RegularExpressions;
 
 @inject NavigationManager _navigationManager
-@* @inject HttpClient _httpClient *@
 @inject IConfiguration _config
 @inject IJSRuntime _jsRuntime
 @inject SpotifyServices_TokenService _tokenService
@@ -21,34 +20,94 @@
 
 <PageTitle>Playlists</PageTitle>
 
-<div class="w3-bar">
-    <button class="w3-bar-item w3-right" @onclick="AuthorizeSignOut">Spotify sign out</button>
+<div>
+    <button class="font-sans text-lg font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:rounded-3xl hover:text-white transition duration-500" style=" float: right !important" @onclick="AuthorizeSignOut">Sign out</button>
     @if (SpotifyAuthUser != null)
     {
-        <h5 class="w3-right" style="margin:8px"><b id="user_id">@SpotifyAuthUser.DisplayName</b></h5>
+        <p class="font-mono text-2xl font-medium text-gray-600" id="user_id" style="float: right !important;margin:8px">@SpotifyAuthUser.DisplayName</p>
     }
 </div>
-
+<div class="flex flex-wrap justify-center items-center" style="margin-top:60px">
+    <button class="font-sans font-bold rounded-full text-white border-2 border-orange-300 w-20 h-8 bg-orange-300 rounded-3xl transition duration-500" id="btn_UserPlaylists" onclick="spotifyShowPlaylists(true)" style="margin-right:8px">Playlists</button>
+    <button class="font-sans font-bold rounded-full text-gray-600 border-2 border-orange-300 w-20 h-8 hover:bg-orange-300 rounded-3xl hover:text-white transition duration-500" id="btn_OpenCreatePlaylist" onclick="spotifyShowPlaylists(false)" style="">Create</button>
+</div>
 <div>
-    <div class="w3-bar" id="spotifyPlaylistsDisplay">
+    <div class="flex flex-wrap justify-center items-center" style="margin-top:64px" id="circleLoader">
+        <svg class="animate-spin h-32 w-32 text-blue-500" fill="none" viewBox="0 0 24 24">
+            <circle class="text-orange-300 opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <circle class="text-orange-300" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"></circle>
+        </svg>
+    </div>
+    <div class="flex flex-wrap justify-center items-center" id="spotifyPlaylistsDisplay" style="padding-top:16px;width:100%">
     @if (SpotifyListPlaylists != null)
     {
         foreach (SpotifyPlaylist playlist in SpotifyListPlaylists)
         {
-            <div class="w3-card w3-bar-item w3-round-xlarge" @onclick="() => OpenPlaylist(playlist.Id, playlist.Name)" style="padding-top:16px;margin:8px;cursor:pointer">
-                @if (playlist.Images != null && playlist.Images.Count > 0)
-                {
-                    <img class="w3-round-large" style="width:200px;height:200px" src="@playlist.Images[0].Url" />
-                }
-                <h5 style="text-align:right"><b>@playlist.ShortName</b></h5>
+                <div class="box transform flex flex-col items-center rounded-xl bg-gray-100 shadow-lg duration-150 hover:scale-110 hover:shadow-xl/20 text-center hover:border-2 hover:border-orange-300 playlists" @onclick="() => OpenPlaylist(playlist.Id, playlist.Name)">
+            @if (playlist.Images != null && playlist.Images.Count > 0)
+            {
+                        <img class="rounded playlists-image" src="@playlist.Images[0].Url" />
+            }
+                    <h5 class="text-center playlists-heading">
+                    <b>@playlist.Name</b>
+                </h5>
             </div>
         }
+        <script type="text/javascript">
+            document.getElementById("circleLoader").style.display = "none";
+        </script>
     }
     </div>
     
     <div id="spotifyPlaylistDisplay" style="display:none">
-        <h1><b id="playlistName"></b></h1>
-        <div style="width:50%;float:left">
+        <div class="flex flex-wrap justify-center items-center" style="margin-top:64px" id="circleLoader_Playlist">
+            <svg class="animate-spin h-32 w-32 text-blue-500" fill="none" viewBox="0 0 24 24">
+                <circle class="text-orange-300 opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <circle class="text-orange-300" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"></circle>
+            </svg>
+        </div>
+        <div class="playlist-info" id="playlist_Info">
+            @if (SpotifySelectedPlaylist != null)
+            {
+                <div class="playlist-info-div">
+                    <h2 class="text-center playlist-info-h">
+                        <b>@SpotifySelectedPlaylist.Name</b>
+                    </h2>
+                    <button class="font-sans text-lg font-bold rounded-3xl text-gray-600 border-2 border-orange-300 w-12 h-12 hover:bg-orange-300 hover:rounded-3xl hover:w-28 hover:text-white transition-w-28 duration-300" style="float:right;margin-top:4px" onmouseover="testChangeInner(this, true)" onmouseout="testChangeInner(this, false)" onclick=" window.open('@SpotifySelectedPlaylist.External_Urls.Spotify','_blank')">
+                        &rarr;
+                    </button>
+                </div>
+                <div class="playlist-info-div-two" style="width:30vw">
+                    <img class="rounded-3xl" src="@SpotifySelectedPlaylist.Images[0].Url" />
+                </div>
+
+
+                <div class="box rounded-xl bg-zinc-300 playlist-info-div-three">
+                    <table class="font-mono text-gray-950">
+                        <tr>
+                            <td class="font-semibold" style="text-align:right">Name:</td>
+                            <td id="infoName">@SpotifySelectedPlaylist.Name</td>
+                        </tr>
+                        @if (SpotifySelectedPlaylist.Description != null)
+                        {
+                            <tr>
+                                <td class="font-semibold" id="playlistDescription" style="text-align:right">Description:</td>
+                                <td id="infoDescription">@SpotifySelectedPlaylist.Description</td>
+                            </tr>
+                        }
+                        <tr>
+                            <td class="font-semibold" style="text-align:right">No of tracks:</td>
+                            <td id="infoTrackLength">@SpotifySelectedPlaylist.Tracks.Items.Count</td>
+                        </tr>
+                        <tr>
+                            <td class="font-semibold" style="text-align:right">Duration:</td>
+                            <td id="infoDuration">@SpotifySelectedPlaylist.PlaylistDuration</td>
+                        </tr>
+                    </table>
+                </div>
+            }
+        </div>
+        <div class="border-3 border-solid border-orange-300 box rounded-xl bg-zinc-300 playlist-tracks" id="playlist_Tracks">
             <ol>
             @if (SpotifySelectedPlaylist != null)
             {
@@ -56,14 +115,13 @@
                 {
                     @if (track.Track != null)
                     {
-                        <li style="list-style-type:none">
+                            <li style="list-style-type:none;border-bottom:2px solid rgba(0, 0, 0, 0.1)">
                         <div class="w3-bar">
-                            <div class="w3-bar-item">
-                                <h5>@track.Track.Name - @track.Track.TrackTime</h5>
-                                <h5 style="float:left;margin-top:0px">@track.Track.Artists[0].Name - @track.Track.Album.Name</h5>
-                            </div>
-                            <div class="w3-bar-item" style="float:right">
-                                <button class="w3-button w3-red w3-round-xxlarge w3-bar-item">x</button>
+                            <div class="w3-bar-item w3-bar-item">
+                                <h5 style="width:42vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><b>@track.Track.Name</b></h5>
+                                <h5 style="width:42vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;float:left;margin-top:0px">@track.Track.Artists[0].Name</h5>
+                                <br />
+                                <h6 style="height:24px;width:42vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@track.Track.Album.Name</h6>
                             </div>
                         </div>
                         </li>
@@ -72,34 +130,40 @@
             }
             </ol>
         </div>
-        <div style="width:50%;float:right">
-        @if (SpotifySelectedPlaylist != null)
-        {
-            <img class="w3-round-large" style="width:90%" src="@SpotifySelectedPlaylist.Images[0].Url" />
-        }
+    </div>
+
+    <div id="aiPrompts" style="display:none; text-align:center;padding-top: 16px">
+        <h1 style="margin-bottom:16px;margin-top:0">Create a vibe</h1>
+        <div class="flex flex-wrap justify-center items-center" style="margin-top:64px;display:none" id="circleLoader_GenPlaylist">
+            <svg class="animate-spin h-32 w-32 text-blue-500" fill="none" viewBox="0 0 24 24">
+                <circle class="text-orange-300 opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <circle class="text-orange-300" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"></circle>
+            </svg>
         </div>
-    </div>
-
-    <div id="aiPrompts" style="display:none">
-        <h1 class="w3-bar-item">Search</h1>
-        <input id="input_Prompt" @bind="PromptText" placeholder="Enter text here" style="width:400px" />
-
-        <button @onclick="SubmitPrompt">Submit</button>
-        <button id="btn_SelectAll" onclick="spotifySelectAll()" style="display:none">Select All</button>
-        <button id="btn_CreatePlaylist" @onclick="CreatePlaylist" style="display:none">Create Playlist</button>
-    </div>
-    <div class="w3-center" id="display_Loading" style="display:none">
-        <h1>Loading</h1>
-    </div>
-    <br />
-    <div id="ai_GeneratedPlaylist" style="display:none">
-        <input id="input_PlaylistName" @bind="PlaylistNameText" placeholder="Enter name..." style="width:400px" />
+        <textarea type="text" id="input_Prompt" @bind="PromptText" class="input rounded-xl border-2 border-solid border-orange-300" onclick="updateTextArea(this)" maxlength="300" placeholder="What are you feeling?" style="height:36px;width: 25vw; resize: none; overflow: hidden; box-sizing: border-box;padding: 4px;transition:ease-in 0.4s;text-align:center"></textarea>
+        @* <input class="input rounded-lg border-2 border-solid border-orange-300" id="input_PlaylistName" @bind="PlaylistNameText" placeholder="Enter name..." maxlength="20" style="width:400px;display:none;text-align:center" /> *@
         <br />
-        <h3 id="ai_PlaylistDescription"></h3>
-        <br />
+        <button class="font-sans text-lg font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" id="btn_SubmitPrompt" style="margin-top:16px" @onclick="SubmitPrompt">Search</button>
+        @* <button class="font-sans text-base font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" id="btn_CreatePlaylist" @onclick="CreatePlaylist" style="display:none;margin-top:16px">Create Playlist</button> *@
+    </div>
+    <div class="w3-center" id="display_CreatingPlaylist" style="display:none">
+        <h1>Creating Playlist...</h1>
+    </div>
+    <div class="ai-playlist-info" id="ai_GeneratedPlaylistInfo" style="display:none">
+        <input class="input rounded-lg border-2 border-solid border-orange-300 ai-playlist-name" id="input_PlaylistName" @bind="PlaylistNameText" placeholder="Enter name..." maxlength="200">
+        <button class="font-sans text-base font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" id="btn_CreatePlaylist" @onclick="CreatePlaylist" style="margin-top: 16px;cursor:pointer">Create Playlist</button>
+        <h3 id="ai_PlaylistDescription" style="margin-left:16px"></h3>
+    </div>
+    <div class="border-3 border-solid border-orange-300 box rounded-xl bg-zinc-300 ai-gen-playlist" id="ai_GeneratedPlaylist" style="display:none">
+        <button class="font-sans text-lg font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" id="btn_SelectAll" onclick="spotifySelectAll()" style="margin: 16px 0 8px 16px">Select All</button>
         <ol id="ai_ListPlaylistTracks"></ol>
     </div>
 </div>
+<script type="text/javascript">
+    // document.addEventListener("load", (e) => {
+    //     document.getElementById("div_Sidebar").style.display = "none";
+    // })
+</script>
 
 @code {
     public bool bFoundUser = false;
@@ -136,7 +200,7 @@
         await RemoveToken();
         //Console.WriteLine(_tokenService.AccessToken);
         await _jsRuntime.InvokeVoidAsync("open", signoutUrl, "_blank");
-        
+
         //Call JS function
         await _jsRuntime.InvokeVoidAsync("navigate", "");
 
@@ -159,9 +223,12 @@
         try
         {
             Console.WriteLine("OpenPlaylist id: " + id);
-            await _jsRuntime.InvokeVoidAsync("spotifyOpenPlaylist", playlistName);
+            //await _jsRuntime.InvokeVoidAsync("spotifyOpenPlaylist", playlistName);
+            await _jsRuntime.InvokeVoidAsync("spotifyLodaingPlaylist", true);
             SpotifySelectedPlaylist = await spotifyAppServices.SpotifyGetPlaylist(id);
+            SpotifySelectedPlaylist.Name = playlistName;
             StateHasChanged();
+            await _jsRuntime.InvokeVoidAsync("spotifyLodaingPlaylist", false);
         }
         catch (Exception ex)
         {
@@ -174,6 +241,7 @@
         {
             _jsRuntime.InvokeVoidAsync("spotifyShowLoading");
 
+            /////////// Final version ///////////
             OpenAIServices openAIServices = new OpenAIServices(_config);
 
             OpenAIPlaylist? result = await openAIServices.OpenAISubmitQuery(PromptText);
@@ -186,9 +254,15 @@
 
             // Search for tracks in Spotify
             SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_config, _jsRuntime, _tokenService);
-            
+
             result.Playlist = await spotifyAppServices.SpotifyGetTrackIDs(result.Playlist);
             string playlistResult = JsonConvert.SerializeObject(result);
+            ///////////////////////////////////////
+
+            /// Simulation version ///
+            // OpenAIPlaylist? result = GetPlaylist();
+            // string playlistResult = JsonConvert.SerializeObject(result);
+            //////////////////////////
 
             await _jsRuntime.InvokeVoidAsync("spotifyProcessChatResponse", playlistResult);
         }
@@ -202,7 +276,8 @@
     {
         try
         {
-            string result = await _jsRuntime.InvokeAsync<string>("spotifyGetTracks"); ;
+            string result = await _jsRuntime.InvokeAsync<string>("spotifyGetTracks");
+            _jsRuntime.InvokeVoidAsync("spotifyCreatePlaylistDisplay");
 
             List<string> listSpotifyTrackIds;
             listSpotifyTrackIds = JsonConvert.DeserializeObject<List<string>>(result);
@@ -220,12 +295,178 @@
             string playlistId = await spotifyAppServices.SpotifyCreatePlaylist(PlaylistNameText);
 
             await spotifyAppServices.SpotifyAddTracksToPlaylist(listSpotifyTrackIds, playlistId);
+
+            _jsRuntime.InvokeVoidAsync("spotifyResetGenerator");
+
+            // Refresh the playlists list
+            List<SpotifyPlaylist> listPlaylistItems = await spotifyAppServices.SpotifyGetPlaylists();
+            SpotifyListPlaylists = listPlaylistItems;
+            StateHasChanged();
+
             OpenPlaylist(playlistId, PlaylistNameText);
         }
         catch (Exception ex)
         {
             Console.WriteLine("CreatePlaylist ex: " + ex.Message);
         }
+    }
+    private OpenAIPlaylist GetPlaylist()
+    {
+        List<OpenAITrack> listTracks = new List<OpenAITrack>()
+        {
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            },
+            new OpenAITrack()
+            {
+                Title = "Lose Yourself",
+                Artist = "Eminem",
+                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
+            }
+        };
+
+        OpenAIPlaylist openAIPlaylist = new OpenAIPlaylist()
+        {
+            Description = "A mix of classic and modern hip hop hits to keep the vibes high and the energy flowing.",
+            Playlist = listTracks
+        };
+
+        return openAIPlaylist;
     }
 }
 

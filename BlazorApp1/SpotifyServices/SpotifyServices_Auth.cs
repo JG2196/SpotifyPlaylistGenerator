@@ -187,12 +187,6 @@ namespace BlazorApp1.SpotifyServices
 
                     foreach (SpotifyPlaylist playlist in spotifyPlaylists.Items)
                     {
-                        string shortName = playlist.Name;
-                        if (shortName.Length > 20)
-                        {
-                            shortName = SpotifyShortName(playlist.Name);
-                        }
-                        playlist.ShortName = shortName;
                         listPlaylistItems.Add(playlist);
                     }
 
@@ -257,7 +251,7 @@ namespace BlazorApp1.SpotifyServices
                 }
 
                 string playlistUrl = "https://api.spotify.com/v1/playlists/" + playlistId;
-                string queryFields = "description,id,images(url),tracks(next,total,items(track(album(name),artists(name),duration_ms,id,name)))";
+                string queryFields = "description,external_urls(spotify),id,images(url),tracks(next,total,items(track(album(name),artists(name),duration_ms,id,name)))";
 
                 var builder = new UriBuilder(playlistUrl);
                 var query = $"fields={Uri.UnescapeDataString(queryFields)}";
@@ -267,6 +261,8 @@ namespace BlazorApp1.SpotifyServices
 
                 bool bPagingComplete = false;
                 bool nextPage = false;
+                int msPlaylistDuration = 0;
+
                 while (!bPagingComplete)
                 {
                     SpotifyPlaylist playlistResult = null;
@@ -296,8 +292,8 @@ namespace BlazorApp1.SpotifyServices
                         {
                             foreach (TrackItem track in playlistResult.Tracks.Items)
                             {
-                                string time = SpotifyGenTrackTime(track.Track.Duration_ms);
-                                Console.WriteLine(time);
+                                //string time = SpotifyGenTrackTime(track.Track.Duration_ms);
+                                //Console.WriteLine(time);
                                 //convert ms to seconds
                                 playlist.Tracks.Items.Add(track);
                             }
@@ -317,9 +313,21 @@ namespace BlazorApp1.SpotifyServices
                 {
                     if (selectedTrack.Track != null)
                     {
-                        selectedTrack.Track.TrackTime = SpotifyGenTrackTime(selectedTrack.Track.Duration_ms);
+                        msPlaylistDuration += selectedTrack.Track.Duration_ms;
+                        //selectedTrack.Track.TrackTime = SpotifyGenTrackTime(selectedTrack.Track.Duration_ms);
                     }
                 }
+
+                TimeSpan t = TimeSpan.FromMilliseconds(msPlaylistDuration);
+                int hours = t.Hours;
+                int minutes = t.Minutes;
+
+                string playlistDuration = "0min";
+
+                if (hours > 0 && minutes > 0) { playlistDuration = $"{hours}h {minutes}min"; }
+                else if (hours > 0 && minutes == 0) { playlistDuration = $"{hours}h"; }
+                if (hours == 0 && minutes > 0) { playlistDuration = $"{minutes}min"; }
+                playlist.PlaylistDuration = playlistDuration;
 
             }
             catch (Exception ex)
@@ -556,26 +564,11 @@ namespace BlazorApp1.SpotifyServices
             }
             Console.WriteLine($"SpotifyAddTracksToPlaylist: Successfully added {tracks.Count} tracks to playlist");
         }
-        private string SpotifyShortName(string name)
-        {
-            string? shortName = null;
-
-            try
-            {
-                shortName = name.Substring(0, 20) + "...";
-                //Console.WriteLine("SpotifyShortName shortName: " + shortName);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("SpotifyShortName ex: " + ex.Message);
-            }
-            return shortName;
-        }
         private string SpotifyGenTrackTime(int ms)
         {
             TimeSpan t = TimeSpan.FromMilliseconds(ms);
 
-            string time = $"{t.Minutes}:{t.Seconds}";
+            string time = $"{t.Minutes}:{t.Seconds:D2}";
 
             return time;
 
