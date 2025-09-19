@@ -4,7 +4,6 @@
 @inject NavigationManager _navigationManager
 @inject HttpClient _httpClient
 @inject SpotifyServices_TokenService _tokenService;
-@* <h3>SigninAuth</h3> *@
 
 @rendermode InteractiveServer
 @page "/signinauth"
@@ -23,12 +22,12 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine("OnInitializedAsync Ex: " + ex.Message);
+            Console.WriteLine("Error - OnInitializedAsync Ex: " + ex.Message);
         }
 
         if (bSigninAuthSuccessful)
         {
-        _navigationManager.NavigateTo("/playlists", true);
+            _navigationManager.NavigateTo("/playlists", true);
         }
     }
 }

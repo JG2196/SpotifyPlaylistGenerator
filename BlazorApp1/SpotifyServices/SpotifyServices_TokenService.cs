@@ -8,7 +8,7 @@ namespace BlazorApp1.SpotifyServices
         private string _accessToken;
         private DateTime _expiresAt;
 
-        // Simulated DB or secure store
+        // Secure store
         private string _protectedRefreshToken;
 
         public SpotifyServices_TokenService(IDataProtectionProvider provider)
