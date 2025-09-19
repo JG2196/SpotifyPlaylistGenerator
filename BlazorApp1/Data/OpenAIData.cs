@@ -1,6 +1,5 @@
 ﻿namespace BlazorApp1.Data
 {
-    //    //// OpenAI Classes
     public class OpenAIPlaylist
     {
         public string Description { get; set; }

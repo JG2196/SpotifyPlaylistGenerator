@@ -27,7 +27,7 @@ namespace BlazorApp1.SpotifyServices
             }
             catch (Exception ex)
             {
-                Console.WriteLine("SpotifySigninAuth Ex: " + ex.Message);
+                Console.WriteLine("Error - SpotifySigninAuth Ex: " + ex.Message);
             }
 
             return spotifyAuthUrl;
@@ -42,7 +42,7 @@ namespace BlazorApp1.SpotifyServices
             }
             catch (Exception ex)
             {
-                Console.WriteLine("GetSpotifyCode Ex: " + ex.Message);
+                Console.WriteLine("Error - SpotifyGetSpotifyCode Ex: " + ex.Message);
             }
 
             return spotifyCode;
@@ -73,7 +73,7 @@ namespace BlazorApp1.SpotifyServices
             }
             catch (Exception ex)
             {
-                Console.WriteLine("ExchangeCodeForToken Ex: " + ex.Message);
+                Console.WriteLine("Error - SpotifyExchangeCodeForToken Ex: " + ex.Message);
             }
             return bSucessful;
         }

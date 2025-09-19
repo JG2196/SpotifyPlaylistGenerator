@@ -10,7 +10,6 @@
 @using Newtonsoft.Json.Linq;
 @using System.Text.RegularExpressions;
 
-@inject NavigationManager _navigationManager
 @inject IConfiguration _config
 @inject IJSRuntime _jsRuntime
 @inject SpotifyServices_TokenService _tokenService
@@ -73,7 +72,7 @@
                     <h2 class="text-center playlist-info-h">
                         <b>@SpotifySelectedPlaylist.Name</b>
                     </h2>
-                    <button class="font-sans text-lg font-bold rounded-3xl text-gray-600 border-2 border-orange-300 w-12 h-12 hover:bg-orange-300 hover:rounded-3xl hover:w-28 hover:text-white transition-w-28 duration-300" style="float:right;margin-top:4px" onmouseover="testChangeInner(this, true)" onmouseout="testChangeInner(this, false)" onclick=" window.open('@SpotifySelectedPlaylist.External_Urls.Spotify','_blank')">
+                    <button class="font-sans text-lg font-bold rounded-3xl text-gray-600 border-2 border-orange-300 w-12 h-12 hover:bg-orange-300 hover:rounded-3xl hover:w-28 hover:text-white transition-w-28 duration-300" style="float:right;margin-top:4px" onmouseover="updateSpotifyButton(this, true)" onmouseout="updateSpotifyButton(this, false)" onclick=" window.open('@SpotifySelectedPlaylist.External_Urls.Spotify','_blank')">
                         &rarr;
                     </button>
                 </div>
@@ -140,30 +139,23 @@
                 <circle class="text-orange-300" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"></circle>
             </svg>
         </div>
-        <textarea type="text" id="input_Prompt" @bind="PromptText" class="input rounded-xl border-2 border-solid border-orange-300" onclick="updateTextArea(this)" maxlength="300" placeholder="What are you feeling?" style="height:36px;width: 25vw; resize: none; overflow: hidden; box-sizing: border-box;padding: 4px;transition:ease-in 0.4s;text-align:center"></textarea>
-        @* <input class="input rounded-lg border-2 border-solid border-orange-300" id="input_PlaylistName" @bind="PlaylistNameText" placeholder="Enter name..." maxlength="20" style="width:400px;display:none;text-align:center" /> *@
+        <textarea type="text" id="input_Prompt" @bind="AIPrompt" class="input rounded-xl border-2 border-solid border-orange-300" onclick="updateTextArea(this)" maxlength="300" placeholder="What are you feeling?" style="height:36px;width: 25vw; resize: none; overflow: hidden; box-sizing: border-box;padding: 4px;transition:ease-in 0.4s;text-align:center"></textarea>
         <br />
         <button class="font-sans text-lg font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" id="btn_SubmitPrompt" style="margin-top:16px" @onclick="SubmitPrompt">Search</button>
-        @* <button class="font-sans text-base font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" id="btn_CreatePlaylist" @onclick="CreatePlaylist" style="display:none;margin-top:16px">Create Playlist</button> *@
     </div>
     <div class="w3-center" id="display_CreatingPlaylist" style="display:none">
         <h1>Creating Playlist...</h1>
     </div>
-    <div class="ai-playlist-info" id="ai_GeneratedPlaylistInfo" style="display:none">
-        <input class="input rounded-lg border-2 border-solid border-orange-300 ai-playlist-name" id="input_PlaylistName" @bind="PlaylistNameText" placeholder="Enter name..." maxlength="200">
+    <div class="ai-playlist-info" id="ai_GeneratedPlaylistInfo" style="display:none;text-align:center">
+        <input class="input rounded-lg border-2 border-solid border-orange-300 ai-playlist-name" id="input_PlaylistName" @bind="InputPlaylistName" placeholder="Enter name..." maxlength="200">
         <button class="font-sans text-base font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" id="btn_CreatePlaylist" @onclick="CreatePlaylist" style="margin-top: 16px;cursor:pointer">Create Playlist</button>
-        <h3 id="ai_PlaylistDescription" style="margin-left:16px"></h3>
+        <h3 id="ai_PlaylistDescription" style="margin-left:16px;margin-right:16px"></h3>
     </div>
     <div class="border-3 border-solid border-orange-300 box rounded-xl bg-zinc-300 ai-gen-playlist" id="ai_GeneratedPlaylist" style="display:none">
         <button class="font-sans text-lg font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" id="btn_SelectAll" onclick="spotifySelectAll()" style="margin: 16px 0 8px 16px">Select All</button>
         <ol id="ai_ListPlaylistTracks"></ol>
     </div>
 </div>
-<script type="text/javascript">
-    // document.addEventListener("load", (e) => {
-    //     document.getElementById("div_Sidebar").style.display = "none";
-    // })
-</script>
 
 @code {
     public bool bFoundUser = false;
@@ -172,15 +164,15 @@
     public List<SpotifyPlaylist>? SpotifyListPlaylists { get; set; } = null;
     public SpotifyPlaylist? SpotifySelectedPlaylist { get; set; } = null;
 
-    private string PromptText { get; set; } = string.Empty;
-    private string PlaylistNameText { get; set; } = string.Empty;
+    private string AIPrompt { get; set; } = string.Empty;
+    private string InputPlaylistName { get; set; } = string.Empty;
 
     //Prevent loops on render
     private bool _hasInitialized = false;
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_config, _jsRuntime, _tokenService);
-
+        
         if (firstRender && !_hasInitialized)
         {
             _hasInitialized = true;
@@ -194,16 +186,13 @@
     }
     private async Task AuthorizeSignOut()
     {
-        //Console.WriteLine(_tokenService.AccessToken);
-        string signoutUrl = "https://accounts.spotify.com/logout/";
-        //Open new tab to signout
         await RemoveToken();
-        //Console.WriteLine(_tokenService.AccessToken);
-        await _jsRuntime.InvokeVoidAsync("open", signoutUrl, "_blank");
+
+        //Open new tab to signout
+        await _jsRuntime.InvokeVoidAsync("open", _config["SpotifyWeb:SignOutUrl"], "_blank");
 
         //Call JS function
         await _jsRuntime.InvokeVoidAsync("navigate", "");
-
     }
     private async Task RemoveToken()
     {
@@ -222,17 +211,17 @@
 
         try
         {
-            Console.WriteLine("OpenPlaylist id: " + id);
-            //await _jsRuntime.InvokeVoidAsync("spotifyOpenPlaylist", playlistName);
             await _jsRuntime.InvokeVoidAsync("spotifyLodaingPlaylist", true);
+            
             SpotifySelectedPlaylist = await spotifyAppServices.SpotifyGetPlaylist(id);
             SpotifySelectedPlaylist.Name = playlistName;
             StateHasChanged();
+            
             await _jsRuntime.InvokeVoidAsync("spotifyLodaingPlaylist", false);
         }
         catch (Exception ex)
         {
-            Console.WriteLine("OpenPlaylist ex: " + ex.Message);
+            Console.WriteLine("Error - OpenPlaylist Ex: " + ex.Message);
         }
     }
     private async void SubmitPrompt()
@@ -241,10 +230,9 @@
         {
             _jsRuntime.InvokeVoidAsync("spotifyShowLoading");
 
-            /////////// Final version ///////////
             OpenAIServices openAIServices = new OpenAIServices(_config);
 
-            OpenAIPlaylist? result = await openAIServices.OpenAISubmitQuery(PromptText);
+            OpenAIPlaylist? result = await openAIServices.OpenAISubmitQuery(AIPrompt);
 
             if (result == null)
             {
@@ -257,18 +245,12 @@
 
             result.Playlist = await spotifyAppServices.SpotifyGetTrackIDs(result.Playlist);
             string playlistResult = JsonConvert.SerializeObject(result);
-            ///////////////////////////////////////
-
-            /// Simulation version ///
-            // OpenAIPlaylist? result = GetPlaylist();
-            // string playlistResult = JsonConvert.SerializeObject(result);
-            //////////////////////////
 
             await _jsRuntime.InvokeVoidAsync("spotifyProcessChatResponse", playlistResult);
         }
         catch (Exception ex)
         {
-            Console.WriteLine("SubmitPrompt ex: " + ex.Message);
+            Console.WriteLine("Error - SubmitPrompt Ex: " + ex.Message);
         }
 
     }
@@ -279,10 +261,8 @@
             string result = await _jsRuntime.InvokeAsync<string>("spotifyGetTracks");
             _jsRuntime.InvokeVoidAsync("spotifyCreatePlaylistDisplay");
 
-            List<string> listSpotifyTrackIds;
+            List<string>? listSpotifyTrackIds = null;
             listSpotifyTrackIds = JsonConvert.DeserializeObject<List<string>>(result);
-
-            CreatePlaylist createPlaylist = new CreatePlaylist();
 
             SpotifyAppServices spotifyAppServices = new SpotifyAppServices(_config, _jsRuntime, _tokenService);
 
@@ -292,7 +272,7 @@
                 return;
             }
 
-            string playlistId = await spotifyAppServices.SpotifyCreatePlaylist(PlaylistNameText);
+            string playlistId = await spotifyAppServices.SpotifyCreatePlaylist(InputPlaylistName);
 
             await spotifyAppServices.SpotifyAddTracksToPlaylist(listSpotifyTrackIds, playlistId);
 
@@ -303,170 +283,12 @@
             SpotifyListPlaylists = listPlaylistItems;
             StateHasChanged();
 
-            OpenPlaylist(playlistId, PlaylistNameText);
+            OpenPlaylist(playlistId, InputPlaylistName);
         }
         catch (Exception ex)
         {
-            Console.WriteLine("CreatePlaylist ex: " + ex.Message);
+            Console.WriteLine("Error - CreatePlaylist Ex: " + ex.Message);
         }
-    }
-    private OpenAIPlaylist GetPlaylist()
-    {
-        List<OpenAITrack> listTracks = new List<OpenAITrack>()
-        {
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            },
-            new OpenAITrack()
-            {
-                Title = "Lose Yourself",
-                Artist = "Eminem",
-                Spotify_Id = "7GhIk7Il098yCjg4BQjzvb"
-            }
-        };
-
-        OpenAIPlaylist openAIPlaylist = new OpenAIPlaylist()
-        {
-            Description = "A mix of classic and modern hip hop hits to keep the vibes high and the energy flowing.",
-            Playlist = listTracks
-        };
-
-        return openAIPlaylist;
     }
 }
 
