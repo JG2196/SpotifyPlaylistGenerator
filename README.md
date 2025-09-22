@@ -6,11 +6,11 @@ SpotifyPlaylistGenerator a Blazor Server web application that allows users to au
 
 ## ⭐Features
 
-- Spotify authentication and playlist management - Display the signed in users playlists, along with information such as: playlist artwork, tracks / track information, playlist description, play time and link direct to playlist.
-- AI-powered playlist generation using OpenAI - Using OpenAI, users can input prompts which will return a list of available tracks in Spotify. Playlists can then be created and added to the users account.
-- Interactive playlist creation and modification - Select the tracks to be added to your playlist based on the AI generation.
-- Simple model alteration - Easily alter which OpenAI model to use for prompt submission.
-- Robust Spotify API handling - Concise API requests to avoid reaching Spotify's rate limit.
+- **Spotify authentication and playlist management** - Display the signed in users playlists, along with information such as: playlist artwork, tracks / track information, playlist description, play time and link direct to playlist.
+- **AI-powered playlist generation using OpenAI** - Using OpenAI, users can input prompts which will return a list of available tracks in Spotify. Playlists can then be created and added to the users account.
+- **Interactive playlist creation and modification** - Select the tracks to be added to your playlist based on the AI generation.
+- **Simple model alteration** - Easily alter which OpenAI model to use for prompt submission.
+- **Robust Spotify API handling** - Concise API requests to avoid reaching Spotify's rate limit.
 
 
 ## Tech Stack
