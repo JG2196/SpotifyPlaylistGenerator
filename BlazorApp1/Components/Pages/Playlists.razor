@@ -85,22 +85,26 @@
                     <table class="font-mono text-gray-950">
                         <tr>
                             <td class="font-semibold" style="text-align:right">Name:</td>
-                            <td id="infoName">@SpotifySelectedPlaylist.Name</td>
+                            <td id="infoName" style="max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@SpotifySelectedPlaylist.Name</td>
                         </tr>
                         @if (SpotifySelectedPlaylist.Description != null)
                         {
                             <tr>
-                                <td class="font-semibold" id="playlistDescription" style="text-align:right">Description:</td>
-                                <td id="infoDescription">@SpotifySelectedPlaylist.Description</td>
+                                <td style="vertical-align:top">
+                                    <div class="font-semibold" id="playlistDescription" style="text-align:right; max-height:100px">Description:</div>
+                                </td>
+                                <td>
+                                    <div id="infoDescription" style="max-width:250px;max-height:90px;white-space:normal;overflow:hidden;overflow-y:scroll">@SpotifySelectedPlaylist.Description</div>
+                                </td>
                             </tr>
                         }
                         <tr>
                             <td class="font-semibold" style="text-align:right">No of tracks:</td>
-                            <td id="infoTrackLength">@SpotifySelectedPlaylist.Tracks.Items.Count</td>
+                            <td id="infoTrackLength" style="max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@SpotifySelectedPlaylist.Tracks.Items.Count</td>
                         </tr>
                         <tr>
                             <td class="font-semibold" style="text-align:right">Duration:</td>
-                            <td id="infoDuration">@SpotifySelectedPlaylist.PlaylistDuration</td>
+                            <td id="infoDuration" style="max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@SpotifySelectedPlaylist.PlaylistDuration</td>
                         </tr>
                     </table>
                 </div>
@@ -142,9 +146,6 @@
         <textarea type="text" id="input_Prompt" @bind="AIPrompt" class="input rounded-xl border-2 border-solid border-orange-300" onclick="updateTextArea(this)" maxlength="300" placeholder="What are you feeling?" style="height:36px;width: 25vw; resize: none; overflow: hidden; box-sizing: border-box;padding: 4px;transition:ease-in 0.4s;text-align:center"></textarea>
         <br />
         <button class="font-sans text-lg font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" id="btn_SubmitPrompt" style="margin-top:16px" @onclick="SubmitPrompt">Search</button>
-    </div>
-    <div class="w3-center" id="display_CreatingPlaylist" style="display:none">
-        <h1>Creating Playlist...</h1>
     </div>
     <div class="ai-playlist-info" id="ai_GeneratedPlaylistInfo" style="display:none;text-align:center">
         <input class="input rounded-lg border-2 border-solid border-orange-300 ai-playlist-name" id="input_PlaylistName" @bind="InputPlaylistName" placeholder="Enter name..." maxlength="200">

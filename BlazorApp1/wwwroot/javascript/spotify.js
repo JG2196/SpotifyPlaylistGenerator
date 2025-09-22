@@ -207,7 +207,6 @@ function spotifyCreatePlaylistDisplay() {
     document.getElementById("aiPrompts").style.display = "none";
     document.getElementById("ai_GeneratedPlaylist").style.display = "none";
     document.getElementById("ai_GeneratedPlaylistInfo").style.display = "none";
-    document.getElementById("display_CreatingPlaylist").style.display = "";
     document.getElementById("ai_PlaylistDescription").innerHTML = "";
     document.getElementById("ai_ListPlaylistTracks").innerHTML = "";
 }
@@ -229,7 +228,6 @@ function spotifyResetGenerator() {
     const btnSelectAll = document.getElementById("btn_SelectAll");
     const btnCreatePlaylist = document.getElementById("btn_CreatePlaylist");
     const circleLoader = document.getElementById("circleLoader_GenPlaylist");
-    const displayCreatingPlaylist = document.getElementById("display_CreatingPlaylist");
     const aiGeneratedPlaylist = document.getElementById("ai_GeneratedPlaylist");
     const aiGeneratedPlaylistInfo = document.getElementById("ai_GeneratedPlaylistInfo");
     const aiPlaylistDescription = document.getElementById("ai_PlaylistDescription");

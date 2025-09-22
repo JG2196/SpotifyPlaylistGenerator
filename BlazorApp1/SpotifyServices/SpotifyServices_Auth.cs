@@ -23,7 +23,7 @@ namespace BlazorApp1.SpotifyServices
             _tokenService = tokenService;
         }
 
-        public async Task<bool> TryRefreshAccessTokenAsync()
+        private async Task<bool> TryRefreshAccessTokenAsync()
         {
             bool bSuccessful = false;
 
@@ -58,7 +58,7 @@ namespace BlazorApp1.SpotifyServices
             
             return bSuccessful;
         }
-        public async Task<HttpResponseMessage> SendWithRateLimitRetryAsync(HttpClient client, string url, HttpMethod method, HttpContent content = null, int maxRetries = 3)
+        private async Task<HttpResponseMessage> SendWithRateLimitRetryAsync(HttpClient client, string url, HttpMethod method, HttpContent content = null, int maxRetries = 3)
         {
             int currentRetry = 0;
             while (currentRetry <= maxRetries)
@@ -126,7 +126,7 @@ namespace BlazorApp1.SpotifyServices
 
             return spotifyAuthUserData;
         }
-        public async Task<SpotifyAuthUser> SpotifyGetProfile()
+        private async Task<SpotifyAuthUser> SpotifyGetProfile()
         {
             SpotifyAuthUser? spotifyAuthUser = null;
             
@@ -214,7 +214,7 @@ namespace BlazorApp1.SpotifyServices
             return listPlaylistItems;
         }
         //Request next page
-        public async Task<SpotifyPlaylists> SpotifyPlaylistsNextRequest(string accessToken, string pageUrl)
+        private async Task<SpotifyPlaylists> SpotifyPlaylistsNextRequest(string accessToken, string pageUrl)
         {
 
             SpotifyPlaylists spotifyPlaylists = null;
@@ -329,7 +329,7 @@ namespace BlazorApp1.SpotifyServices
 
             return playlist;
         }
-        public async Task<SpotifyPlaylist> SpotifyGetPlaylistsInformation(string accessToken, string pageUrl)
+        private async Task<SpotifyPlaylist> SpotifyGetPlaylistsInformation(string accessToken, string pageUrl)
         {
 
             SpotifyPlaylist? spotifyPlaylist = null;
@@ -352,7 +352,7 @@ namespace BlazorApp1.SpotifyServices
 
             return spotifyPlaylist;
         }
-        public async Task<PlaylistTracks> SpotifyGetTrackInformation(string accessToken, string pageUrl)
+        private async Task<PlaylistTracks> SpotifyGetTrackInformation(string accessToken, string pageUrl)
         {
 
             PlaylistTracks? trackItem = null;
