@@ -80,7 +80,7 @@ For the OpenAI Model, select the model that will best fit your needs.
 ```
 
 #### Run Application
-Before running the application restore the NPM packages.
+Before running the application restore the npm packages.
 
 ## Demo
 
