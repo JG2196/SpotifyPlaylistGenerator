@@ -3,8 +3,12 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
+using System.Numerics;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Text.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BlazorApp1.SpotifyServices
 {
@@ -22,7 +26,10 @@ namespace BlazorApp1.SpotifyServices
             _jsRunTime = jsRuntime;
             _tokenService = tokenService;
         }
-
+        /// <summary>
+        /// Attempts to refresh the Spotify access token using the stored refresh token
+        /// </summary>
+        /// <returns>boolean</returns>
         private async Task<bool> TryRefreshAccessTokenAsync()
         {
             bool bSuccessful = false;
@@ -58,7 +65,12 @@ namespace BlazorApp1.SpotifyServices
             
             return bSuccessful;
         }
-        private async Task<HttpResponseMessage> SendWithRateLimitRetryAsync(HttpClient client, string url, HttpMethod method, HttpContent content = null, int maxRetries = 3)
+        /// <summary>
+        /// Handles HTTP requests with rate limiting retry logic.
+        /// Implements exponential backoff when rate limits are hit.
+        /// Maximum 3 retries by default
+        /// </summary>
+        private static async Task<HttpResponseMessage> SendWithRateLimitRetryAsync(HttpClient client, string url, HttpMethod method, HttpContent content = null, int maxRetries = 3)
         {
             int currentRetry = 0;
             while (currentRetry <= maxRetries)
@@ -166,6 +178,11 @@ namespace BlazorApp1.SpotifyServices
             
             return spotifyAuthUser;
         }
+        /// <summary>
+        /// Retrieves all playlists for the authenticated user.
+        /// Handles pagination to get complete playlist collection.
+        /// </summary>
+        /// <returns>SpotifyAuthUser</returns>
         public async Task<List<SpotifyPlaylist>> SpotifyGetPlaylists()
         {
 
@@ -213,7 +230,10 @@ namespace BlazorApp1.SpotifyServices
             }
             return listPlaylistItems;
         }
-        //Request next page
+        /// <summary>
+        /// Helper function to fetch the next page of playlists
+        /// </summary>
+        /// <returns>SpotifyPlaylists</returns>
         private async Task<SpotifyPlaylists> SpotifyPlaylistsNextRequest(string accessToken, string pageUrl)
         {
 
@@ -256,8 +276,8 @@ namespace BlazorApp1.SpotifyServices
                 {
                     throw new Exception("SpotifyGetPlaylist: Access token is null or empty. Please authenticate first.");
                 }
-
-                string playlistUrl = $"https://api.spotify.com/v1/playlists/{playlistId}";
+                
+                string playlistUrl = $"{_config["SpotifyWeb:PlaylistURL"]}{playlistId}";
                 string queryFields = "description,external_urls(spotify),id,images(url),tracks(next,total,items(track(album(name),artists(name),duration_ms,id,name)))";
 
                 var builder = new UriBuilder(playlistUrl);
@@ -270,6 +290,7 @@ namespace BlazorApp1.SpotifyServices
                 bool nextPage = false;
                 int msPlaylistDuration = 0;
 
+                // Page through results
                 while (!bPagingComplete)
                 {
                     SpotifyPlaylist? playlistResult = null;
@@ -375,6 +396,11 @@ namespace BlazorApp1.SpotifyServices
 
             return trackItem;
         }
+        /// <summary>
+        /// Searches Spotify for track IDs based on title and artist.
+        /// Used for matching tracks to Spotify's catalog.
+        /// </summary>
+        /// <returns>List OpenAITrack</returns>
         public async Task<List<OpenAITrack>> SpotifyGetTrackIDs(List<OpenAITrack> listTracks)
         {
             int successfulSearch = 0;
@@ -529,7 +555,7 @@ namespace BlazorApp1.SpotifyServices
 
                     var response = await SendWithRateLimitRetryAsync(
                     _httpClient,
-                    $"https://api.spotify.com/v1/playlists/{playlistId}/tracks",
+                    $"{_config["SpotifyWeb:PlaylistURL"]}{playlistId}/tracks",
                     HttpMethod.Post,
                     httpContent
                 );
@@ -553,7 +579,7 @@ namespace BlazorApp1.SpotifyServices
             }
             Console.WriteLine($"Error - SpotifyAddTracksToPlaylist: Successfully added {tracks.Count} tracks to playlist");
         }
-        private string SpotifyGenplaylistDuration(int playlistDuration)
+        private static string SpotifyGenplaylistDuration(int playlistDuration)
         {
             string duration = string.Empty;
 

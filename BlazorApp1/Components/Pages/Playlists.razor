@@ -148,8 +148,8 @@
         <button class="font-sans text-lg font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" id="btn_SubmitPrompt" style="margin-top:16px" @onclick="SubmitPrompt">Search</button>
     </div>
     <div class="ai-playlist-info" id="ai_GeneratedPlaylistInfo" style="display:none;text-align:center">
-        <input class="input rounded-lg border-2 border-solid border-orange-300 ai-playlist-name" id="input_PlaylistName" @bind="InputPlaylistName" placeholder="Enter name..." maxlength="200">
-        <button class="font-sans text-base font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" id="btn_CreatePlaylist" @onclick="CreatePlaylist" style="margin-top: 16px;cursor:pointer">Create Playlist</button>
+        <input class="input rounded-lg border-2 border-solid border-orange-300 ai-playlist-name" id="input_PlaylistName" @bind="InputPlaylistName" placeholder="Enter name..." maxlength="200" onkeyup="playlistNameValidation(this)">
+        <button class="font-sans text-base font-bold rounded-md text-gray-600 border-2 border-orange-300 w-28 h-12 hover:bg-orange-300 hover:text-white transition duration-500 hover:rounded-3xl" id="btn_CreatePlaylist" @onclick="CreatePlaylist" style="margin-top: 16px;cursor:pointer" disabled>Create Playlist</button>
         <h3 id="ai_PlaylistDescription" style="margin-left:16px;margin-right:16px"></h3>
     </div>
     <div class="border-3 border-solid border-orange-300 box rounded-xl bg-zinc-300 ai-gen-playlist" id="ai_GeneratedPlaylist" style="display:none">
@@ -238,6 +238,8 @@
             if (result == null)
             {
                 Console.WriteLine("SubmitPrompt: result is null or empty");
+                //_jsRuntime.InvokeVoidAsync("spotifyShowLoading");
+                await _jsRuntime.InvokeVoidAsync("spotifyShowPlaylists", true);
                 return;
             }
 

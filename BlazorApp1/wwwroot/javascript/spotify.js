@@ -38,6 +38,7 @@
         aiPrompts.style.display = "";
     }
     else {
+        document.getElementById("circleLoader_GenPlaylist").style.display = "none";
         spotifyPlaylistsDisplay.style.display = "";
         aiPrompts.style.display = "none";
         btnCreatePlaylist.style.display = "none";
@@ -240,9 +241,16 @@ function spotifyResetGenerator() {
     aiPlaylistDescription.innerHTML = "";
     aiListPlaylistTracks.innerHTML = "";
 
-    let arrAiElm = [aiPrompts, inputPlaylistName, btnSelectAll, btnCreatePlaylist, circleLoader, displayCreatingPlaylist, aiGeneratedPlaylist, aiGeneratedPlaylistInfo];
+    let arrAiElm = [aiPrompts, inputPlaylistName, btnSelectAll, btnCreatePlaylist, circleLoader, aiGeneratedPlaylist, aiGeneratedPlaylistInfo];
 
     for (let i = 0; i < arrAiElm.length; i++) {
         arrAiElm[i].style.display = "none";
     }
+}
+function playlistNameValidation(elm) {
+
+    const btnCreatePlaylist = document.getElementById("btn_CreatePlaylist");
+
+    if (elm.value == "") { btnCreatePlaylist.disabled = true; }
+    else { btnCreatePlaylist.disabled = false; }
 }

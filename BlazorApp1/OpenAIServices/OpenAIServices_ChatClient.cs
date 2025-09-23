@@ -83,6 +83,10 @@ namespace BlazorApp1.OpenAIServices
                     openAIPlaylist = JsonConvert.DeserializeObject<OpenAIPlaylist>(resultString);
                 }
 
+                if (openAIPlaylist == null)
+                {
+                    return openAIPlaylist;
+                }
                 if (openAIPlaylist.Playlist.Count < 15)
                 {
                     openAIPlaylist = null; // Ensure at least 15 tracks
