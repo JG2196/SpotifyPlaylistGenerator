@@ -22,14 +22,8 @@ SpotifyPlaylistGenerator a Blazor Server web application that allows users to au
 **API:** OpenAI, Spotify Web
 
 **Tunneling:** NGROK (optional)
+
 ## Installation
-
-Clone my project via github or
-
-```
-  git clone https://github.com/JG2196/BlazorApp1.git
-  cd BlazorApp1
-```
 
 ### Prerequisites
 
