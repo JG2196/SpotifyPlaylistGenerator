@@ -76,6 +76,13 @@ For the OpenAI Model, select the model that will best fit your needs.
 #### Run Application
 Before running the application restore the npm packages.
 
+## 🚀Future Improvements
+
+- **AI Integration Optimization:** Implement modular AI agents tailored to the project, minimizing resource and improving scalability.
+- **Enhanced AI Response Accuracy:** Refine response logic to generate playlists that more closely align with user prompts.
+-	**Track Playback Preview:** Enable users to preview individual tracks.
+- **Playlist Editing:** Introduce functionality for users to modify existing playlists, including renaming, adding tracks and removing tracks.
+
 ## Demo
 
 **Display the signed in users playlists and tracks in a selected playlist**
@@ -93,11 +100,3 @@ Before running the application restore the npm packages.
 **The newly created playlist added to the users account**
 
 ![](/assets/PlayGen_CreatedPlaylist.png)
-
-## 🚀Future Improvements
-
-- **AI Integration Optimization:** Implement modular AI agents tailored to the project, minimizing resource and improving scalability.
-- **Enhanced AI Response Accuracy:** Refine response logic to generate playlists that more closely align with user prompts.
--	**Track Playback Preview:** Enable users to preview individual tracks.
-- **Playlist Editing:** Introduce functionality for users to modify existing playlists, including renaming, adding tracks and removing tracks.
-
